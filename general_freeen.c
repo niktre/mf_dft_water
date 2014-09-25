@@ -225,12 +225,8 @@ int main (int argc, char **argv){
 	for (k1 = 1; k1 < grid.z+1; k1++){
 		for(sn = 0; sn < nSub; sn++){
 			dist2.x = SQR(subNode[sn].rs.x - ((int) ((nRep.x - 1) / 2) + 0.5) * grid.x - 1);
-//			dist2.x = MIN(dist2.x, SQR(subNode[sn].rs.x - 1 + grid.x));
-//			dist2.x = MIN(dist2.x, SQR(subNode[sn].rs.x - 1 - grid.x));
 			
 			dist2.y = SQR(subNode[sn].rs.y - ((int) ((nRep.y - 1) / 2) + 0.5) * grid.y - 1);
-//			dist2.y = MIN(dist2.y, SQR(subNode[sn].rs.y - 1 + grid.y));
-//			dist2.y = MIN(dist2.y, SQR(subNode[sn].rs.y - 1 - grid.y));
 			
 			/* take into account the "0"th plane and the planes up to rCut beneath */
 			for (ks = 0; ks < subDepth; ks++){
