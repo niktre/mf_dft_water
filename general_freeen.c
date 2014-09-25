@@ -320,13 +320,9 @@ int main (int argc, char **argv){
 						for(sn = 0; sn < nSub; sn++){
 							// account for PBC in x
 							dist2.x = SQR(subNode[sn].rs.x - (int) ((nRep.x - 1) / 2) * grid.x - i1);
-//							dist2.x = MIN(dist2.x, SQR(subNode[sn].rs.x - i1 + grid.x));
-//							dist2.x = MIN(dist2.x, SQR(subNode[sn].rs.x - i1 - grid.x));
 
 							// account for PBC in y
 							dist2.y = SQR(subNode[sn].rs.y - (int) ((nRep.y - 1) / 2) * grid.y - j1);
-//							dist2.y = MIN(dist2.y, SQR(subNode[sn].rs.y - j1 + grid.y));
-//							dist2.y = MIN(dist2.y, SQR(subNode[sn].rs.y - j1 - grid.y));
 							
 							dist2.z = SQR(subNode[sn].rs.z - k1); // no PBC in z!
 		
