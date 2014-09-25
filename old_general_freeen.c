@@ -225,12 +225,8 @@ int main (int argc, char **argv){
 	for (k1 = 1; k1 < grid.z+1; k1++){
 		for(sn = 0; sn < nSub; sn++){
 			dist2.x = SQR(subNode[sn].rs.x - ((int) ((nRep.x - 1) / 2) + 0.5) * grid.x - 1);
-//			dist2.x = MIN(dist2.x, SQR(subNode[sn].rs.x - 1 + grid.x));
-//			dist2.x = MIN(dist2.x, SQR(subNode[sn].rs.x - 1 - grid.x));
 			
 			dist2.y = SQR(subNode[sn].rs.y - ((int) ((nRep.y - 1) / 2) + 0.5) * grid.y - 1);
-//			dist2.y = MIN(dist2.y, SQR(subNode[sn].rs.y - 1 + grid.y));
-//			dist2.y = MIN(dist2.y, SQR(subNode[sn].rs.y - 1 - grid.y));
 			
 			/* take into account the "0"th plane and the planes up to rCut beneath */
 			for (ks = 0; ks < subDepth; ks++){
@@ -281,28 +277,19 @@ int main (int argc, char **argv){
 			for (j1 = 1; j1 < grid.y+1; j1++){
 				for (k1 = 1; k1 < grid.z+1; k1++){
 					/* create initial liquid field */
-					if (NVT == 1) {
-						if (nDims == 3 && (SQR((i1 - 0.5)*dx-cm0.x)+SQR((j1 - 0.5)*dy-cm0.y)
-															 +SQR((k1 - 0.5 - 1.)*dz - corr.z - cm0.z) < rrToCm0)
-													 && (filled_x_grids < nMol / (rho_liq * dV))) {
+					if (nDims == 3 && (SQR((i1 - 0.5)*dx-cm0.x)+SQR((j1 - 0.5)*dy-cm0.y)
+							 +SQR((k1 - 0.5 - 1.)*dz - corr.z - cm0.z) < rrToCm0)
+								&& (filled_x_grids < nMol / (rho_liq * dV))) {
+						wa[i1][j1][k1] = V11*rho_liq + W111*SQR(rho_liq);
+						total_N = total_N + 1.;
+						++filled_x_grids;
+					} else if	(nDims == 2 &&
+										 (SQR((i1 - 0.5)*dx-cm0.x) +
+											SQR((k1 - 0.5 - 1.)*dz - corr.z - cm0.z) < rrToCm0) &&
+										 (filled_x_grids < nMol / (rho_liq * dV))) {
 							wa[i1][j1][k1] = V11*rho_liq + W111*SQR(rho_liq);
 							total_N = total_N + 1.;
 							++filled_x_grids;
-						} else if	(nDims == 2 &&
-											 (SQR((i1 - 0.5)*dx-cm0.x) +
-												SQR((k1 - 0.5 - 1.)*dz - corr.z - cm0.z) < rrToCm0) &&
-											 (filled_x_grids < nMol / (rho_liq * dV))) {
-							wa[i1][j1][k1] = V11*rho_liq + W111*SQR(rho_liq);
-							total_N = total_N + 1.;
-							++filled_x_grids;
-						}
-					} else {
-						wa[i1][j1][k1] = 0.;
-//						if ((0.5 * dz + (k1 - 1)*dz) > 2. * corr.z){
-						if ((0.5 * dz + (k1 - 1)*dz) > 2. * corr.z){
-							wa[i1][j1][k1] = V11*rho_liq + W111*SQR(rho_liq);
-							total_N = total_N + 1.;
-						}
 					}
 				}
 			}
@@ -333,13 +320,9 @@ int main (int argc, char **argv){
 						for(sn = 0; sn < nSub; sn++){
 							// account for PBC in x
 							dist2.x = SQR(subNode[sn].rs.x - (int) ((nRep.x - 1) / 2) * grid.x - i1);
-//							dist2.x = MIN(dist2.x, SQR(subNode[sn].rs.x - i1 + grid.x));
-//							dist2.x = MIN(dist2.x, SQR(subNode[sn].rs.x - i1 - grid.x));
 
 							// account for PBC in y
 							dist2.y = SQR(subNode[sn].rs.y - (int) ((nRep.y - 1) / 2) * grid.y - j1);
-//							dist2.y = MIN(dist2.y, SQR(subNode[sn].rs.y - j1 + grid.y));
-//							dist2.y = MIN(dist2.y, SQR(subNode[sn].rs.y - j1 - grid.y));
 							
 							dist2.z = SQR(subNode[sn].rs.z - k1); // no PBC in z!
 		
@@ -431,24 +414,14 @@ int main (int argc, char **argv){
 			MAKE_FILENAME(fullname_conv,"converge_test.dat");
 		}
 		
-		CalcPartSumQ (NVT);
+		CalcPartSumQ ();
 		
 		/* density calculation */
 		// inside the simulation region
-		if (NVT == 1){
-			for(i1 = 1; i1 < grid.x+1; i1++){
-				for(j1 = 1; j1 < grid.y+1; j1++){
-					for(k1 = 1; k1 < grid.z+1; k1++){
-						rho[i1][j1][k1] = total_N * exp(- wa[i1][j1][k1]) / Q;
-					}
-				}
-			}
-		}	else {
-			for(i1 = 1; i1 < grid.x+1; i1++){
-				for(j1 = 1; j1 < grid.y+1; j1++){
-					for(k1 = 1; k1 < grid.z+1; k1++){
-						rho[i1][j1][k1] = rho_liq * exp(V11*rho_liq + W111*SQR(rho_liq) - wa[i1][j1][k1]);
-					}
+		for(i1 = 1; i1 < grid.x+1; i1++){
+			for(j1 = 1; j1 < grid.y+1; j1++){
+				for(k1 = 1; k1 < grid.z+1; k1++){
+					rho[i1][j1][k1] = total_N * exp(- wa[i1][j1][k1]) / Q;
 				}
 			}
 		}
@@ -468,9 +441,7 @@ int main (int argc, char **argv){
 		for(i1 = 1; i1 < grid.x+1; i1++){
 			// z-direction
 			for(j1 = 1; j1 < grid.y+1; j1++){
-				rho[i1][j1][0] = 0.; //rho[i1][j1][grid.z+1] = 0.;
-				// an attempt to implement reflecting boundary
-				rho[i1][j1][grid.z+1] = rho[i1][j1][grid.z-1];
+				rho[i1][j1][0] = 0.; rho[i1][j1][grid.z+1] = 0.;
 			}
 		}
 		
@@ -499,8 +470,8 @@ int main (int argc, char **argv){
 												 ((rho[i1][j1+1][k1] - 2.*rho[i1][j1][k1] + rho[i1][j1-1][k1])/dy2));
 					if (k1 == 1) {
 						grad[i1][j1][k1] -= KAPPA * ( (rho[i1][j1][k1+1] - 3.*rho[i1][j1][k1] + 2.*rho[i1][j1][k1-1]) / dz2 );
-//					} else if (k1 == grid.z) {
-//						grad[i1][j1][k1] -= KAPPA * ( (2.*rho[i1][j1][k1+1] - 3.*rho[i1][j1][k1] + rho[i1][j1][k1-1]) / dz2 );
+					} else if (k1 == grid.z) {
+						grad[i1][j1][k1] -= KAPPA * ( (2.*rho[i1][j1][k1+1] - 3.*rho[i1][j1][k1] + rho[i1][j1][k1-1]) / dz2 );
 					} else {
 						grad[i1][j1][k1] -= KAPPA * ( (rho[i1][j1][k1+1] - 2.*rho[i1][j1][k1] + rho[i1][j1][k1-1]) / dz2 );
 					}
@@ -519,7 +490,7 @@ int main (int argc, char **argv){
 	return(0);
 } /* FINISHED main function */
 
-void CalcFreeEn (int temp_iteration_num, int temp_kk, int temp_NVT) {
+void CalcFreeEn (int temp_iteration_num, int temp_kk) {
 	V_ZERO (rho_fd);
 	V_ZERO (rho_bd);
 	V_ZERO (rho_cd);
@@ -540,11 +511,7 @@ void CalcFreeEn (int temp_iteration_num, int temp_kk, int temp_NVT) {
 		// do nothing
 	}
 	
-	if (temp_NVT == 1) {
-		term1 = -total_N * (log(Q / total_N) + 1.);
-	} else {
-		term1 =	-rho_liq * Q * exp(rho_liq * (V11 + W111 * rho_liq));
-	}
+	term1 = -total_N * (log(Q / total_N) + 1.);
 	term2 = 0.;
 	term3 = 0.;
 	term4 = 0.;
@@ -564,8 +531,8 @@ void CalcFreeEn (int temp_iteration_num, int temp_kk, int temp_NVT) {
 				
 				if (k == 1) {
 					rho_cd.z = (rho[i][j][k+1] + rho[i][j][k] - 2.*rho[i][j][k-1])/dz;
-//				} else if (k == grid.z) {
-//					rho_cd.z = (2.*rho[i][j][k+1] - rho[i][j][k] - rho[i][j][k-1])/dz;
+				} else if (k == grid.z) {
+					rho_cd.z = (2.*rho[i][j][k+1] - rho[i][j][k] - rho[i][j][k-1])/dz;
 				} else {
 					rho_cd.z = (rho[i][j][k+1] - rho[i][j][k-1])/dz;
 				}
@@ -662,48 +629,27 @@ void PrintSnapField (int _id, int _kk, int _i1, int _j1, int _k1) {
 		fclose(wPressure);
 			
 		// calculate free energy
-		CalcFreeEn(iteration_num, _kk + iteration_num, NVT);
+		CalcFreeEn(iteration_num, _kk + iteration_num);
 	} else {
 	}
 }
 
 /* calculation of the Q coefficient!!! */
-void CalcPartSumQ (int _NVT) {
+void CalcPartSumQ () {
 	int i1, j1, k1;
 	
 	Q = 0.;
 	
-	if (_NVT == 1) {
-		for(i1 = 1; i1 < grid.x+1; i1++){
-			XYa[i1] = 0.;
-			for(j1 = 1; j1 < grid.y+1; j1++){
-				YYa[j1] = 0.;
-				for(k1 = 1; k1 < grid.z+1; k1++){
-					YYa[j1] = YYa[j1] + koeff_z_open[k1]*exp(-wa[i1][j1][k1])*dz;
-				}
-				XYa[i1] = XYa[i1] + koeff_y_semi[j1]*YYa[j1]*dy;
+	for(i1 = 1; i1 < grid.x+1; i1++){
+		XYa[i1] = 0.;
+		for(j1 = 1; j1 < grid.y+1; j1++){
+			YYa[j1] = 0.;
+			for(k1 = 1; k1 < grid.z+1; k1++){
+				YYa[j1] = YYa[j1] + koeff_z_open[k1]*exp(-wa[i1][j1][k1])*dz;
 			}
-			Q = Q + koeff_x_semi[i1]*XYa[i1]*dx;
+			XYa[i1] = XYa[i1] + koeff_y_semi[j1]*YYa[j1]*dy;
 		}
-	} else {
-		total_N = 0.;
-		
-		for(i1 = 1; i1 < grid.x+1; i1++){
-			XYa[i1]  = 0.;
-			XYat[i1] = 0.;
-			for(j1 = 1; j1 < grid.y+1; j1++){
-				YYa[j1]  = 0.;
-				YYat[j1] = 0.;
-				for(k1 = 1; k1 < grid.z+1; k1++){
-					YYa[j1]  = YYa[j1]  + koeff_z_open[k1]*exp(-wa[i1][j1][k1])*dz;
-					YYat[j1] = YYat[j1] + koeff_z_open[k1]*rho[i1][j1][k1]*dz;
-				}
-				XYa[i1]  = XYa[i1]  + koeff_y_semi[j1]*YYa[j1]*dy;
-				XYat[i1] = XYat[i1] + koeff_y_semi[j1]*YYat[j1]*dy;
-			}
-			Q = Q + koeff_x_semi[i1]*XYa[i1]*dx;
-			total_N = total_N + koeff_x_semi[i1]*XYat[i1]*dx;
-		}
+		Q = Q + koeff_x_semi[i1]*XYa[i1]*dx;
 	}
 }
 

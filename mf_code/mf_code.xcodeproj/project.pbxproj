@@ -7,10 +7,10 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		B468E86819D4482D0080C3D7 /* canon_freeen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = canon_freeen.c; path = ../canon_freeen.c; sourceTree = "<group>"; };
+		B468E86819D4482D0080C3D7 /* general_freeen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = general_freeen.c; path = ../general_freeen.c; sourceTree = "<group>"; };
 		B468E86919D4482D0080C3D7 /* gcan_2014_07_08.out */ = {isa = PBXFileReference; lastKnownFileType = file; name = gcan_2014_07_08.out; path = ../gcan_2014_07_08.out; sourceTree = "<group>"; };
-		B468E86A19D4482D0080C3D7 /* general_freeen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = general_freeen.c; path = ../general_freeen.c; sourceTree = "<group>"; };
-		B468E86B19D4482D0080C3D7 /* general_freeen.c~ */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "general_freeen.c~"; path = "../general_freeen.c~"; sourceTree = "<group>"; };
+		B468E86A19D4482D0080C3D7 /* old_general_freeen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = old_general_freeen.c; path = ../old_general_freeen.c; sourceTree = "<group>"; };
+		B468E86B19D4482D0080C3D7 /* old_general_freeen.c~ */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "old_general_freeen.c~"; path = "../old_general_freeen.c~"; sourceTree = "<group>"; };
 		B468E86C19D4482D0080C3D7 /* in_proto.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = in_proto.h; path = ../in_proto.h; sourceTree = "<group>"; };
 		B468E86D19D4482D0080C3D7 /* in_vdefs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = in_vdefs.h; path = ../in_vdefs.h; sourceTree = "<group>"; };
 		B468E86E19D4482D0080C3D7 /* io_interface.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = io_interface.c; path = ../io_interface.c; sourceTree = "<group>"; };
@@ -20,16 +20,18 @@
 		B468E87219D4482D0080C3D7 /* send_job_gcan.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = send_job_gcan.sh; path = ../send_job_gcan.sh; sourceTree = "<group>"; };
 		B468E87319D4482D0080C3D7 /* simple_test.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = simple_test.c; path = ../simple_test.c; sourceTree = "<group>"; };
 		B468E87419D4482D0080C3D7 /* submit_gcan_freeen.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = submit_gcan_freeen.sh; path = ../submit_gcan_freeen.sh; sourceTree = "<group>"; };
+		B468E87619D449750080C3D7 /* makefile */ = {isa = PBXFileReference; explicitFileType = sourcecode.make; fileEncoding = 4; name = makefile; path = ../makefile; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		B468E85D19D447FB0080C3D7 = {
 			isa = PBXGroup;
 			children = (
-				B468E86819D4482D0080C3D7 /* canon_freeen.c */,
+				B468E87619D449750080C3D7 /* makefile */,
+				B468E86819D4482D0080C3D7 /* general_freeen.c */,
 				B468E86919D4482D0080C3D7 /* gcan_2014_07_08.out */,
-				B468E86A19D4482D0080C3D7 /* general_freeen.c */,
-				B468E86B19D4482D0080C3D7 /* general_freeen.c~ */,
+				B468E86A19D4482D0080C3D7 /* old_general_freeen.c */,
+				B468E86B19D4482D0080C3D7 /* old_general_freeen.c~ */,
 				B468E86C19D4482D0080C3D7 /* in_proto.h */,
 				B468E86D19D4482D0080C3D7 /* in_vdefs.h */,
 				B468E86E19D4482D0080C3D7 /* io_interface.c */,
@@ -47,11 +49,12 @@
 /* Begin PBXLegacyTarget section */
 		B468E86219D447FB0080C3D7 /* mf_code */ = {
 			isa = PBXLegacyTarget;
-			buildArgumentsString = "$(ACTION)";
+			buildArgumentsString = "";
 			buildConfigurationList = B468E86519D447FB0080C3D7 /* Build configuration list for PBXLegacyTarget "mf_code" */;
 			buildPhases = (
 			);
 			buildToolPath = /usr/bin/make;
+			buildWorkingDirectory = /Users/niktre/Documents/MPIP/LB_codes/mf_code;
 			dependencies = (
 			);
 			name = mf_code;
