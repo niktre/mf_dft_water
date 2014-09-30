@@ -210,47 +210,47 @@ int main (int argc, char **argv){
 
 	AllocSubstrate ();
 	
-	// set up the flat substrate
-	for (i1 = 1; i1 < nRep.x * grid.x + 1; i1++){
-		for (j1 = 1; j1 < nRep.y * grid.y + 1; j1++){
-			// create "0"th substrate plane
-			V_SET(subNode[nSub].rs, i1, j1, 0);
-			++nSub;
-			printf ("nSub is %8d\n", nSub);
+	if (restart == 0) {
+		// set up the flat substrate
+		for (i1 = 1; i1 < nRep.x * grid.x + 1; i1++){
+			for (j1 = 1; j1 < nRep.y * grid.y + 1; j1++){
+				// create "0"th substrate plane
+				V_SET(subNode[nSub].rs, i1, j1, 0);
+				++nSub;
+//			printf ("nSub is %8d\n", nSub);
+			}
 		}
-	}
-	printf ("set up the flat substrate\n");
+		printf ("set up the flat substrate\n");
 	
-	/* calculate z-dependence of the potential created by a flat substrate */
-	for (k1 = 1; k1 < grid.z+1; k1++){
-		for(sn = 0; sn < nSub; sn++){
-			dist2.x = SQR(subNode[sn].rs.x - ((int) ((nRep.x - 1) / 2) + 0.5) * grid.x - 1);
+		/* calculate z-dependence of the potential created by a flat substrate */
+		for (k1 = 1; k1 < grid.z+1; k1++){
+			for(sn = 0; sn < nSub; sn++){
+				dist2.x = SQR(subNode[sn].rs.x - ((int) ((nRep.x - 1) / 2) + 0.5) * grid.x - 1);
 //			dist2.x = MIN(dist2.x, SQR(subNode[sn].rs.x - 1 + grid.x));
 //			dist2.x = MIN(dist2.x, SQR(subNode[sn].rs.x - 1 - grid.x));
 			
-			dist2.y = SQR(subNode[sn].rs.y - ((int) ((nRep.y - 1) / 2) + 0.5) * grid.y - 1);
+				dist2.y = SQR(subNode[sn].rs.y - ((int) ((nRep.y - 1) / 2) + 0.5) * grid.y - 1);
 //			dist2.y = MIN(dist2.y, SQR(subNode[sn].rs.y - 1 + grid.y));
 //			dist2.y = MIN(dist2.y, SQR(subNode[sn].rs.y - 1 - grid.y));
 			
-			/* take into account the "0"th plane and the planes up to rCut beneath */
-			for (ks = 0; ks < subDepth; ks++){
-				dist2.z = SQR(ks + k1);
+				/* take into account the "0"th plane and the planes up to rCut beneath */
+				for (ks = 0; ks < subDepth; ks++){
+					dist2.z = SQR(ks + k1);
 				
-				distance2 = dist2.x * dx2 + dist2.y * dy2 + dist2.z * dz2;
-				if (distance2 < rrCut) {
-					ri2 = sigma_sub2/distance2;
-					ri6 = CUBE(ri2);
-					subPotZ[k1] +=	ri6 * (ri6 - 1.);
+					distance2 = dist2.x * dx2 + dist2.y * dy2 + dist2.z * dz2;
+					if (distance2 < rrCut) {
+						ri2 = sigma_sub2/distance2;
+						ri6 = CUBE(ri2);
+						subPotZ[k1] +=	ri6 * (ri6 - 1.);
+					}
 				}
 			}
+			subPotZ[k1] *=	4. * eps;
+			/* in the end we have one dimensional (w.r.t. z) potential */
 		}
-		subPotZ[k1] *=	4. * eps;
-		/* in the end we have one dimensional (w.r.t. z) potential */
-	}
-	printf ("Made the 0th substrate layer. It has %d nodes\n", nSub);
+		printf ("Made the 0th substrate layer. It has %d nodes\n", nSub);
 	
-	/* creation of corrugation nodes (if any) initial fields */
-	if (restart == 0) {
+		/* creation of corrugation nodes (if any) initial fields */
 		nSub = 0;	// now it count only corrugation nodes
 		
 		iteration_num = 0;
@@ -391,6 +391,7 @@ int main (int argc, char **argv){
 				}
 			}
 		}
+		printf ("Finished with scanning substrate file!\n");
 		printf ("total_N is %10.8f\n", total_N);
 
 		fclose(Wfields);
