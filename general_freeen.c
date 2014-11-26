@@ -476,7 +476,7 @@ int main (int argc, char **argv){
 		/* FINISHED density calculation */
 		
 		PrintSnapField (0, kk, 0, 0, 0);
-		
+		printf("finished PrintSnapField with id 0\n");
 		/* finding new fields */
 		for(i1 = 1; i1 < grid.x+1; i1++){
 			for(j1 = 1; j1 < grid.y+1; j1++){
@@ -500,8 +500,11 @@ int main (int argc, char **argv){
 				}
 			}
 		}
+		printf("finished PrintSnapField with id 1\n");
 		
 		PrintSnapField (2, kk, 0, 0, 0);
+		printf("finished PrintSnapField with id 2\n");
+
 	}  /* FINISHED SCF iteration loop */
 	
 	return(0);
