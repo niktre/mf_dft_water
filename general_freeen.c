@@ -159,19 +159,6 @@ int main (int argc, char **argv){
 	InitParameters ();
 	StoreParameters ();
 	
-	if (nDims == 3) {
-		rrToCm0 = pow(.75 * nMol / (rho_liq * M_PI),1./3.);
-	} else if (nDims == 2) {
-		rrToCm0 = sqrt(nMol / (rho_liq * M_PI * L.y));
-	}
-	rrToCm0 += .02 * dx;
-	V_SET(cm0, .5 * (L.x - cav.x), .5 * L.y, rrToCm0 + dz);
-	rrToCm0 *= rrToCm0;
-	dV = dx*dy*dz;
-
-	printf ("rrToCm0 is %8.4f\n", rrToCm0);
-	printf ("cm0 is %8.4f %8.4f %8.4f \n", cm0.x, cm0.y, cm0.z);
-	
 	DefineSimpson ();
 	
 	/* set initial values of field, gradients, etc. to zero. 
@@ -265,7 +252,20 @@ int main (int argc, char **argv){
 			}
 		}
 		
-		// create liquid
+		// create liquid		
+		if (nDims == 3) {
+			rrToCm0 = pow(.75 * nMol / (rho_liq * M_PI),1./3.);
+		} else if (nDims == 2) {
+			rrToCm0 = sqrt(nMol / (rho_liq * M_PI * L.y));
+		}
+		rrToCm0 += .02 * dx;
+		V_SET(cm0, .5 * (L.x - cav.x), .5 * L.y, rrToCm0 + dz);
+		rrToCm0 *= rrToCm0;
+		dV = dx*dy*dz;
+		
+		printf ("rrToCm0 is %8.4f\n", rrToCm0);
+		printf ("cm0 is %8.4f %8.4f %8.4f \n", cm0.x, cm0.y, cm0.z);
+
 		for (i1 = 1; i1 < grid.x+1; i1++){
 			for (j1 = 1; j1 < grid.y+1; j1++){
 				for (k1 = 1; k1 < grid.z+1; k1++){
@@ -438,6 +438,8 @@ int main (int argc, char **argv){
 			}
 		}
 		
+		printf("assigned new density values\n");
+		
 		/*
 		 c
 		 c In order to implement easier
@@ -469,7 +471,8 @@ int main (int argc, char **argv){
 				rho[0][j1][k1] = rho[grid.x][j1][k1]; rho[grid.x+1][j1][k1] = rho[1][j1][k1];
 			}
 		}
-
+		printf("finished with PBC\n");
+		
 		/* FINISHED density calculation */
 		
 		PrintSnapField (0, kk, 0, 0, 0);
@@ -690,6 +693,7 @@ void CalcPartSumQ (int _NVT) {
 			total_N = total_N + koeff_x_semi[i1]*XYat[i1]*dx;
 		}
 	}
+	printf("finished CalcPartSumQ. Value of Q is %8.4f, total_N is %8.4f\n", Q, total_N);
 }
 
 void DefineSimpson () {
