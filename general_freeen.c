@@ -498,7 +498,25 @@ int main (int argc, char **argv){
 			}
 		}
 		
-		PrintSnapField (2, kk, 0, 0, 0);
+		if (kk % TWRITE == 0) {
+			if (write_snapshot == 1) {
+				// evaluates pressure and calculates free energy
+				FILE *wPressure;
+				
+				// save the pressure at the node [2][5][5]
+				wPressure = fopen(fullname_press,"a");
+				fprintf (wPressure,	"step %d. The gas pressure is %6.10f \n",
+								 kk + iteration_num,
+								 kbT * 10. * (rho[2][5][5] +
+															(0.5 * V11 * SQR(rho[2][5][5])) +
+															(2. * W111 * CUBE(rho[2][5][5])/3.)) );
+				fclose(wPressure);
+			} else {
+			}
+			
+			// calculate free energy
+			CalcFreeEn(iteration_num, kk + iteration_num, NVT);
+		}
 	}  /* FINISHED SCF iteration loop */
 	
 	return(0);
@@ -561,24 +579,6 @@ void PrintSnapField (int _id, int _kk, int _i1, int _j1, int _k1) {
 		} else {
 		}
 
-	} else if (_id == 2) {
-		if (write_snapshot == 1) {
-			// evaluates pressure and calculates free energy
-			FILE *wPressure;
-		
-			// save the pressure at the node [2][5][5]
-			wPressure = fopen(fullname_press,"a");
-			fprintf (wPressure,	"step %d. The gas pressure is %6.10f \n",
-							 _kk + iteration_num,
-							 kbT * 10. * (rho[2][5][5] +
-														(0.5 * V11 * SQR(rho[2][5][5])) +
-														(2. * W111 * CUBE(rho[2][5][5])/3.)) );
-			fclose(wPressure);
-		} else {
-		}
-		
-		// calculate free energy
-		CalcFreeEn(iteration_num, _kk + iteration_num, NVT);
 	} else {
 	}
 }
