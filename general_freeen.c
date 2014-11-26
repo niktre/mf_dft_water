@@ -689,16 +689,20 @@ void CalcFreeEn (int temp_iteration_num, int temp_kk, int _NVT) {
 				} else {
 					rho_cd.z = (rho[i][j][k+1] - rho[i][j][k-1])/dz;
 				}
+				printf("rho[i][j][k+1] is %8.4f, rho[i][j][k] is %8.4f\n",
+							 rho[i][j][k+1], rho[i][j][k-1]);
 				
 				term2 = V11 * 0.5 * SQR(rho[i][j][k]) +	W111 * (1./3.) * CUBE(rho[i][j][k]);
-				
+				printf ("finished with term2 \n");
 				term3 = 0.125 * KAPPA * (SQR(rho_cd.x) + SQR(rho_cd.y) + SQR(rho_cd.z));
-				
+				printf ("finished with term3 \n");
 				term4 = -wa[i][j][k] * rho[i][j][k];
-				
+				printf ("finished with term4 \n");
 				term_sub = sub[i][j][k] * rho[i][j][k];
-				
+				printf ("finished with term_sub \n");
 				YYa[j] = YYa[j] +  koeff_z_open[k]*(term2 + term3 + term4 + term_sub)*dz;
+				printf ("finished with YYa \n");
+
 			}
 			XYa[i] = XYa[i] + koeff_y_semi[j]*YYa[j]*dy;
 		}
