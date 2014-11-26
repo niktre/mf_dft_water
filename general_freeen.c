@@ -698,8 +698,11 @@ void CalcFreeEn (int temp_iteration_num, int temp_kk, int _NVT) {
 				printf ("finished with term3 \n");
 				term4 = -wa[i][j][k] * rho[i][j][k];
 				printf ("finished with term4 \n");
+
+				printf("sub[i][j][k] is %8.4f\n", sub[i][j][k]);
 				term_sub = sub[i][j][k] * rho[i][j][k];
 				printf ("finished with term_sub \n");
+				
 				YYa[j] = YYa[j] +  koeff_z_open[k]*(term2 + term3 + term4 + term_sub)*dz;
 				printf ("finished with YYa \n");
 
