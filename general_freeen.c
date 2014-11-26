@@ -666,12 +666,14 @@ void CalcFreeEn (int temp_iteration_num, int temp_kk, int _NVT) {
 	
 	sum_final = 0.;
 	
+	printf("Starting free energy loop\n");
 	/* calculation of the free energy*/
 	for(i = 1; i < grid.x+1; i++){
 		XYa[i] = 0.;
 		for(j = 1; j < grid.y+1; j++){
 			YYa[j] = 0.;
 			for(k = 1; k < grid.z+1; k++){
+				printf("i, j, k are %d %d %d\n", i, j, k);
 				/* central differences * 2. in 3 dimensions */
 				rho_cd.x = (rho[i+1][j][k] - rho[i-1][j][k])/dx;
 				rho_cd.y = (rho[i][j+1][k] - rho[i][j-1][k])/dy;
@@ -698,7 +700,8 @@ void CalcFreeEn (int temp_iteration_num, int temp_kk, int _NVT) {
 		}
 		sum_final  = sum_final  + koeff_x_semi[i]*XYa[i]*dx;
 	}
-	
+	printf("Finished free energy loop\n");
+
 	sum_final =  sum_final + term1;
 	
 	/* print into the file */
