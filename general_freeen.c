@@ -33,6 +33,7 @@ char fullname_conv[120];
 char fullname_snap[120];
 char fullname_param[120];
 char fullname_press[120];
+char fullname_profiling[120];
 char fullname_test[120];
 char path[80];
 char folder[80];
@@ -76,10 +77,9 @@ double eps;						// amplitude of the potential
 /* statistical properties of the ensemble */
 double total_N;				// total number of molecules in the system
 double Q;							// statistical sum
-double check_N;
 
 /* time variables for simple profiling */
-time_t now, later;		// two marks of the time-measurement
+time_t begin, end;		// two marks of the time-measurement
 double seconds;				// length of time interval between 2 measurements
 
 /* integration variables */
@@ -126,7 +126,7 @@ double ***grad;
  */
 
 int main (int argc, char **argv){
-	time(&now);
+	time(&begin);
 	
 	PassConsoleParams (argc, argv);
 
@@ -347,14 +347,11 @@ int main (int argc, char **argv){
 		printf ("Finished with initial fields creation! total_N is %10.8f\n",total_N);
 		
 	} else {	// if we are restarting an old calculation
-		printf("inside restart == 1; iteration_num = %d\n", iteration_num);
 		// read iteration number and total number of particles for restart
 		MAKE_FILENAME(fullname_iter,"iteration.dat");
 		iterkeeper = fopen(fullname_iter,"r");
-		printf ("fullname_iter is %s\n", fullname_iter);
 		fscanf(iterkeeper,"%d %lf\n",&iteration_num, &total_N);
 		fclose(iterkeeper);
-		printf("closed iterkeeper\n");
 		
 		// make new value for total_N (just in case it matters...)
 		
@@ -378,7 +375,6 @@ int main (int argc, char **argv){
 					/* read in the field and the substrate potential */
 					fscanf(Wfields,"%lf \n",&wa[i1][j1][k1]);
 					fscanf(Wsub,"%lf \n",&sub[i1][j1][k1]);
-					// what about sub[0][0][0]???
 				}
 			}
 		}
@@ -389,8 +385,6 @@ int main (int argc, char **argv){
 	}
 	
 	for (kk = 0; kk < iterations; kk++){
-		printf("Starting calculation for step %d\n", kk);
-//		if (kk % TWRITE != 0 || (kk == 0 && iteration_num != 0) ) {
 		if (kk % TWRITE != 0) {
 			write_snapshot = 0;
 		} else {
@@ -420,6 +414,7 @@ int main (int argc, char **argv){
 				fclose(converge);
 			}
 		} else {
+			if (restart == 1) write_snapshot = 0;
 			MAKE_FILENAME(fullname_conv,"converge_test.dat");
 		}
 		
@@ -445,9 +440,7 @@ int main (int argc, char **argv){
 			}
 		}
 		
-		printf("assigned new density values\n");
-		
-		/*
+		/* account for periodic boundaries
 		 c
 		 c In order to implement easier
 		 c the periodic boundary conditions
@@ -458,7 +451,6 @@ int main (int argc, char **argv){
 		 c
 		 */
 		
-		/* account for periodic boundaries */
 		for(i1 = 1; i1 < grid.x+1; i1++){
 			// z-direction
 			for(j1 = 1; j1 < grid.y+1; j1++){
@@ -478,12 +470,10 @@ int main (int argc, char **argv){
 				rho[0][j1][k1] = rho[grid.x][j1][k1]; rho[grid.x+1][j1][k1] = rho[1][j1][k1];
 			}
 		}
-		printf("finished with PBC\n");
 		
 		/* FINISHED density calculation */
 		
 		PrintSnapField (0, kk, 0, 0, 0);
-		printf("finished PrintSnapField with id 0\n");
 		/* finding new fields */
 		for(i1 = 1; i1 < grid.x+1; i1++){
 			for(j1 = 1; j1 < grid.y+1; j1++){
@@ -507,11 +497,8 @@ int main (int argc, char **argv){
 				}
 			}
 		}
-		printf("finished PrintSnapField with id 1\n");
 		
 		PrintSnapField (2, kk, 0, 0, 0);
-		printf("finished PrintSnapField with id 2\n");
-
 	}  /* FINISHED SCF iteration loop */
 	
 	return(0);
@@ -522,35 +509,27 @@ void PrintSnapField (int _id, int _kk, int _i1, int _j1, int _k1) {
 	int i1, j1, k1;
 	
 	if (_id == 0 && _kk % TWRITE == 0) {
-		// re-writes iteration file; opens snapshot and Wfields files
-		FILE *iterkeeper;
-		extern double check_N;
-		
-		/* output into files */
-		time(&later);
-		seconds = difftime(later,now); now = later;
-			
-		/* calculate check_N and test it output onto the screen every step */
-		check_N = 0.;
-		for (i1 = 1; i1 < grid.x+1; i1++){
-			XYat[i1] = 0.;
-			for (j1 = 1; j1 < grid.y+1; j1++){
-				YYat[j1] = 0.;
-				for (k1 = 1; k1 < grid.z+1; k1++){
-					YYat[j1] = YYat[j1] + koeff_z_open[k1]*rho[i1][j1][k1]*dz;
-				}
-				XYat[i1] = XYat[i1] + koeff_y_semi[j1]*YYat[j1]*dy;
-			}
-			check_N = check_N + koeff_x_semi[i1]*XYat[i1]*dx;
-		}
 		if (write_snapshot == 1) {
 			// save current interation number
+			FILE *iterkeeper;
 			MAKE_FILENAME(fullname_iter,"iteration.dat");
 			iterkeeper = fopen(fullname_iter,"w");
 			fprintf(iterkeeper,"%d %10.8f\n",_kk + iteration_num, total_N);
 			fclose(iterkeeper);
+			
+			/* output into profiling statistics */
+			time(&end);
+			seconds = difftime(end,begin);
+			begin = end;
+			
+			FILE *timeprof;
+			MAKE_FILENAME(fullname_profiling, "timeprof.dat");
+			timeprof = fopen(fullname_profiling,"a");
+			fprintf (timeprof, "%d %g\n", _kk + iteration_num, seconds);
+			fclose(timeprof);
+		} else {
 		}
-	} else if (_id == 1 && write_snapshot != 0) {
+	} else if (_id == 1 && write_snapshot == 1) {
 		FILE *snapshot, *Wrestart;
 
 		if (_i1 == 1 && _j1 == 1 && _k1==1) {
@@ -565,6 +544,7 @@ void PrintSnapField (int _id, int _kk, int _i1, int _j1, int _k1) {
 			sprintf(name,"Wfields_%d.dat",_kk + iteration_num);
 			MAKE_FILENAME(fullname_Wfields,name);
 			Wrestart=fopen(fullname_Wfields,"w");
+		} else {
 		}
 		
 		// saves the snapshot (the rest) and fields for future restart
@@ -577,23 +557,27 @@ void PrintSnapField (int _id, int _kk, int _i1, int _j1, int _k1) {
 		
 		if (_i1 == grid.x && _j1 == grid.y && _k1 == grid.z) {
 			// close snapshot and field files
-			printf("Trying to close snapshot and Wrestart files\n");
 			fclose(snapshot); fclose(Wrestart);
+		} else {
 		}
 
-	} else if (_id == 2 && write_snapshot == 1) {
-		// evaluates pressure and calculates free energy
-		FILE *wPressure;
+	} else if (_id == 2) {
+		if (write_snapshot == 1) {
+			// evaluates pressure and calculates free energy
+			FILE *wPressure;
 		
-		printf("Opening wPressure file\n");
-		// save the pressure at the node [2][5][5]
-		wPressure = fopen(fullname_press,"a");
-		fprintf (wPressure,	"step %d. The gas pressure is %6.10f \n",
-						 _kk + iteration_num, kbT*10.*(rho[2][5][5] + (0.5 * V11 * SQR(rho[2][5][5])) + (2. * W111 * CUBE(rho[2][5][5])/3.)) );
-		fclose(wPressure);
-			
+			// save the pressure at the node [2][5][5]
+			wPressure = fopen(fullname_press,"a");
+			fprintf (wPressure,	"step %d. The gas pressure is %6.10f \n",
+							 _kk + iteration_num,
+							 kbT * 10. * (rho[2][5][5] +
+														(0.5 * V11 * SQR(rho[2][5][5])) +
+														(2. * W111 * CUBE(rho[2][5][5])/3.)) );
+			fclose(wPressure);
+		} else {
+		}
+		
 		// calculate free energy
-		printf("Starting to calculate free energy\n");
 		CalcFreeEn(iteration_num, _kk + iteration_num, NVT);
 	} else {
 	}
@@ -637,7 +621,7 @@ void CalcPartSumQ (int _NVT) {
 			total_N = total_N + koeff_x_semi[i1]*XYat[i1]*dx;
 		}
 	}
-	printf("finished CalcPartSumQ. Value of Q is %8.4f, total_N is %8.4f\n", Q, total_N);
+//	printf("finished CalcPartSumQ. Value of Q is %8.4f, total_N is %8.4f\n", Q, total_N);
 }
 
 void CalcFreeEn (int temp_iteration_num, int temp_kk, int _NVT) {
@@ -673,20 +657,13 @@ void CalcFreeEn (int temp_iteration_num, int temp_kk, int _NVT) {
 	term_sub = 0.;
 	
 	sum_final = 0.;
-	printf("sub[1][1][1] is %8.4f\n", sub[1][1][1]);
 
-	printf("Starting free energy loop\n");
 	/* calculation of the free energy*/
 	for(i = 1; i < grid.x+1; i++){
 		XYa[i] = 0.;
 		for(j = 1; j < grid.y+1; j++){
 			YYa[j] = 0.;
 			for(k = 1; k < grid.z+1; k++){
-//				printf("i, j, k are %d %d %d\n", i, j, k);
-//				printf("rho[i-1][j][k] is %8.4f, rho[i+1][j][k] is %8.4f\n",
-//							 rho[i+1][j][k], rho[i-1][j][k]);
-//				printf("rho[i][j+1][k] is %8.4f, rho[i][j-1][k] is %8.4f\n",
-//							 rho[i][j+1][k], rho[i][j-1][k]);
 				/* central differences * 2. in 3 dimensions */
 				rho_cd.x = (rho[i+1][j][k] - rho[i-1][j][k])/dx;
 				rho_cd.y = (rho[i][j+1][k] - rho[i][j-1][k])/dy;
@@ -698,29 +675,18 @@ void CalcFreeEn (int temp_iteration_num, int temp_kk, int _NVT) {
 				} else {
 					rho_cd.z = (rho[i][j][k+1] - rho[i][j][k-1])/dz;
 				}
-//				printf("rho[i][j][k+1] is %8.4f, rho[i][j][k] is %8.4f\n",
-//							 rho[i][j][k+1], rho[i][j][k-1]);
 				
 				term2 = V11 * 0.5 * SQR(rho[i][j][k]) +	W111 * (1./3.) * CUBE(rho[i][j][k]);
-//				printf ("finished with term2 \n");
 				term3 = 0.125 * KAPPA * (SQR(rho_cd.x) + SQR(rho_cd.y) + SQR(rho_cd.z));
-//				printf ("finished with term3 \n");
 				term4 = -wa[i][j][k] * rho[i][j][k];
-//				printf ("finished with term4 \n");
-
-//				printf("sub[i][j][k] is %8.4f\n", sub[i][j][k]);
 				term_sub = sub[i][j][k] * rho[i][j][k];
-//				printf ("finished with term_sub \n");
 				
 				YYa[j] = YYa[j] +  koeff_z_open[k]*(term2 + term3 + term4 + term_sub)*dz;
-//				printf ("finished with YYa \n");
-
 			}
 			XYa[i] = XYa[i] + koeff_y_semi[j]*YYa[j]*dy;
 		}
 		sum_final  = sum_final  + koeff_x_semi[i]*XYa[i]*dx;
 	}
-	printf("Finished free energy loop\n");
 
 	sum_final =  sum_final + term1;
 	
@@ -729,7 +695,8 @@ void CalcFreeEn (int temp_iteration_num, int temp_kk, int _NVT) {
 					sum_final * kbT, total_N);
 	
 	/* print onto the screen */
-	printf("%d %10.8f %10.8f %g %10.8f %8.4f\n", temp_kk, sum_final * kbT, Q, convergence, total_N, seconds);
+	printf("%d %10.8f %10.8f %g %10.8f\n",
+				 temp_kk, sum_final * kbT, Q, convergence, total_N);
 	
 	fclose(free_energy_out);
 }
