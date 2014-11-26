@@ -642,6 +642,7 @@ void CalcFreeEn (int temp_iteration_num, int temp_kk, int _NVT) {
 	
 	double  term1,term2,term3,term4,term_sub;
 	double 	sum_final;
+	extern double ***sub;
 	
 	FILE *free_energy_out;
 	
