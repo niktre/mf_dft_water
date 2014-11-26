@@ -39,15 +39,15 @@ char folder[50];
 double write_snapshot;
 
 /* global properties of the system*/
-double kbT;					// kbT :-)
-double rho_liq;			// density in the bulk (at the top of the box)
+double kbT;						// kbT :-)
+double rho_liq;				// density in the bulk (at the top of the box)
 double lambda;				// relaxation parameter of the SC-scheme
 
 /* properties of the run */
 int	restart;					// restart flag
 int	iteration_num;		// if restarted, the last existing iteration
 int	iterations;				// desired iterations limit
-double convergence;	// convergence
+double convergence;		// convergence
 
 /* size and grid related properties */
 VecR L;								// box length
@@ -78,7 +78,7 @@ double total_N;				// total number of molecules in the system
 double Q;							// statistical sum
 double check_N;
 
-/* time variables */
+/* time variables for simple profiling */
 time_t now, later;		// two marks of the time-measurement
 double seconds;				// length of time interval between 2 measurements
 
@@ -114,13 +114,11 @@ double ***grad;
  c
  c       |<------------- L.x ------------->|
  c       |                                 |
- c   0__ |__1__2__.....__grid.x-1__grid.x__|__grid.x+1
+ c    0__|__1__2__.....__grid.x-1__grid.x__|__grid.x+1
  c       |                                 |
  c       |                                 |
- c       |
  c
  c       0 = grid.x, grid.x+1 = 1   _____ = L.x / grid.x
- c
  c
  c    Make sure since the integrations will be performed by
  c    Simpson method grid.x grid.y grid.z must be odd numbers
@@ -138,7 +136,6 @@ int main (int argc, char **argv){
 	VecR dist2;
 	int i1,j1,k1,kk;
 	int is, js, ks, sn;
-	int corrShift;
 	int subDepth;
 	VecR cm0;
 	double rrToCm0;
@@ -180,19 +177,19 @@ int main (int argc, char **argv){
 	/* set initial values of field, gradients, etc. to zero. 
 	 Create nodes of flat substrate */
 	nSub = 0;
-	corrShift = (int) (corr.z / dz) + 1;
 	subDepth = (int) (rCut / dz);
+
+	// calculate total number of box replicas in x,y-directions,
+  // including the original box
 	V_SET (nRep, (int) (2 * ((int) (rCut / L.x) + 1) + 1),
 							 (int) (2 * ((int) (rCut / L.y) + 1) + 1),
 							 0);
-	// total number of box replicas in y-direction, inc. the original one
-
 	printf ("total number of box replicas in x is %8d, in y is %8d\n", nRep.x, nRep.y);
 	
 	// set all the fields to zero
-	for (i1 = 1; i1 < grid.x+1; i1++){
-		for (j1 = 1; j1 < grid.y+1; j1++){
-			for (k1 = 1; k1 < grid.z+1; k1++){
+	for (i1 = 0; i1 < grid.x+1; i1++){
+		for (j1 = 0; j1 < grid.y+1; j1++){
+			for (k1 = 0; k1 < grid.z+1; k1++){
 				/* set free energy terms to zero*/
 				SET_TO_ZERO (df_drho,i1,j1,k1);
 				SET_TO_ZERO (grad,i1,j1,k1);
@@ -203,7 +200,6 @@ int main (int argc, char **argv){
 				
 				subPotZ[k1] = 0.;
 			}
-			
 		}
 	}
 	printf ("set up fields to zero\n");
@@ -211,13 +207,12 @@ int main (int argc, char **argv){
 	AllocSubstrate ();
 	
 	if (restart == 0) {
-		// set up the flat substrate
+		/* set up the flat substrate */
 		for (i1 = 1; i1 < nRep.x * grid.x + 1; i1++){
 			for (j1 = 1; j1 < nRep.y * grid.y + 1; j1++){
 				// create "0"th substrate plane
 				V_SET(subNode[nSub].rs, i1, j1, 0);
 				++nSub;
-//			printf ("nSub is %8d\n", nSub);
 			}
 		}
 		printf ("set up the flat substrate\n");
@@ -226,17 +221,11 @@ int main (int argc, char **argv){
 		for (k1 = 1; k1 < grid.z+1; k1++){
 			for(sn = 0; sn < nSub; sn++){
 				dist2.x = SQR(subNode[sn].rs.x - ((int) ((nRep.x - 1) / 2) + 0.5) * grid.x - 1);
-//			dist2.x = MIN(dist2.x, SQR(subNode[sn].rs.x - 1 + grid.x));
-//			dist2.x = MIN(dist2.x, SQR(subNode[sn].rs.x - 1 - grid.x));
-			
 				dist2.y = SQR(subNode[sn].rs.y - ((int) ((nRep.y - 1) / 2) + 0.5) * grid.y - 1);
-//			dist2.y = MIN(dist2.y, SQR(subNode[sn].rs.y - 1 + grid.y));
-//			dist2.y = MIN(dist2.y, SQR(subNode[sn].rs.y - 1 - grid.y));
 			
 				/* take into account the "0"th plane and the planes up to rCut beneath */
 				for (ks = 0; ks < subDepth; ks++){
 					dist2.z = SQR(ks + k1);
-				
 					distance2 = dist2.x * dx2 + dist2.y * dy2 + dist2.z * dz2;
 					if (distance2 < rrCut) {
 						ri2 = sigma_sub2/distance2;
@@ -266,8 +255,8 @@ int main (int argc, char **argv){
 				for (k1 = 1; k1 < grid.z+1; k1++){
 					/* create substrate nodes taking into account corrugation */
 					if ((((i1 - 1) % (int)((corr.x + cav.x) / dx)) * dx < corr.x) &&
-						 (((j1 - 1) % (int)((corr.y + cav.y) / dy)) * dy < corr.y) &&
-						 ((k1 - .5)*dz < corr.z) ) {
+							(((j1 - 1) % (int)((corr.y + cav.y) / dy)) * dy < corr.y) &&
+							((k1 - .5)*dz < corr.z) ) {
 						V_SET(subNode[nSub].rs, i1, j1, k1);
 						++nSub;
 					} else {
@@ -297,8 +286,8 @@ int main (int argc, char **argv){
 							++filled_x_grids;
 						}
 					} else {
+						// grand canonical ensemble
 						wa[i1][j1][k1] = 0.;
-//						if ((0.5 * dz + (k1 - 1)*dz) > 2. * corr.z){
 						if ((0.5 * dz + (k1 - 1)*dz) > 2. * corr.z){
 							wa[i1][j1][k1] = V11*rho_liq + W111*SQR(rho_liq);
 							total_N = total_N + 1.;
@@ -333,15 +322,10 @@ int main (int argc, char **argv){
 						for(sn = 0; sn < nSub; sn++){
 							// account for PBC in x
 							dist2.x = SQR(subNode[sn].rs.x - (int) ((nRep.x - 1) / 2) * grid.x - i1);
-//							dist2.x = MIN(dist2.x, SQR(subNode[sn].rs.x - i1 + grid.x));
-//							dist2.x = MIN(dist2.x, SQR(subNode[sn].rs.x - i1 - grid.x));
-
 							// account for PBC in y
 							dist2.y = SQR(subNode[sn].rs.y - (int) ((nRep.y - 1) / 2) * grid.y - j1);
-//							dist2.y = MIN(dist2.y, SQR(subNode[sn].rs.y - j1 + grid.y));
-//							dist2.y = MIN(dist2.y, SQR(subNode[sn].rs.y - j1 - grid.y));
-							
-							dist2.z = SQR(subNode[sn].rs.z - k1); // no PBC in z!
+							// no PBC in z!
+							dist2.z = SQR(subNode[sn].rs.z - k1);
 		
 							distance2 = dist2.x * dx2 + dist2.y * dy2 + dist2.z * dz2;
 							if (distance2 < rrCut) {
@@ -360,7 +344,7 @@ int main (int argc, char **argv){
 		fclose(Wsub);
 		printf ("Finished with initial fields creation! total_N is %10.8f\n",total_N);
 		
-	} else {
+	} else {	// if we are restarting an old calculation
 		// read iteration number and total number of particles for restart
 		MAKE_FILENAME(fullname_iter,"iteration.dat");
 		iterkeeper = fopen(fullname_iter,"r");
@@ -387,7 +371,7 @@ int main (int argc, char **argv){
 					/* read in the field and the substrate potential */
 					fscanf(Wfields,"%lf \n",&wa[i1][j1][k1]);
 					fscanf(Wsub,"%lf \n",&sub[i1][j1][k1]);
-					
+					// what about sub[0][0][0]???
 				}
 			}
 		}
@@ -398,7 +382,7 @@ int main (int argc, char **argv){
 	}
 	
 	for (kk = 0; kk < iterations; kk++){
-		
+		printf("Starting calculation for step %d\n", kk);
 //		if (kk % TWRITE != 0 || (kk == 0 && iteration_num != 0) ) {
 		if (kk % TWRITE != 0) {
 			write_snapshot = 0;
