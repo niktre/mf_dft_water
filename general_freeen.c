@@ -510,6 +510,119 @@ int main (int argc, char **argv){
 	return(0);
 } /* FINISHED main function */
 
+void PrintSnapField (int _id, int _kk, int _i1, int _j1, int _k1) {
+	FILE *snapshot, *Wrestart;
+	int i1, j1, k1;
+	
+	if (_id == 0 && _kk % TWRITE == 0) {
+		// re-writes iteration file; opens snapshot and Wfields files
+		FILE *iterkeeper;
+		extern double check_N;
+		
+		/* output into files */
+		time(&later);
+		seconds = difftime(later,now); now = later;
+			
+		/* calculate check_N and test it output onto the screen every step */
+		check_N = 0.;
+		for (i1 = 1; i1 < grid.x+1; i1++){
+			XYat[i1] = 0.;
+			for (j1 = 1; j1 < grid.y+1; j1++){
+				YYat[j1] = 0.;
+				for (k1 = 1; k1 < grid.z+1; k1++){
+					YYat[j1] = YYat[j1] + koeff_z_open[k1]*rho[i1][j1][k1]*dz;
+				}
+				XYat[i1] = XYat[i1] + koeff_y_semi[j1]*YYat[j1]*dy;
+			}
+			check_N = check_N + koeff_x_semi[i1]*XYat[i1]*dx;
+		}
+		if (write_snapshot == 1) {
+			// save current interation number
+			MAKE_FILENAME(fullname_iter,"iteration.dat");
+			iterkeeper = fopen(fullname_iter,"w");
+			fprintf(iterkeeper,"%d %10.8f\n",_kk + iteration_num, total_N);
+			fclose(iterkeeper);
+				
+			// save snapshots (here is a caption ONLY)
+			sprintf(name,"snapshot_%d.dat",_kk + iteration_num);
+			MAKE_FILENAME(fullname_snap,name);
+			snapshot = fopen(fullname_snap,"w");
+			fprintf (snapshot,"VARIABLES = \"X\", \"Y\", \"Z\",\"density\",\"df_drho\",\"grad\",\"subpot\",\"wa\",\n");
+			fprintf (snapshot,"ZONE I=%d, J=%d, K=%d, F=POINT\n",grid.z, grid.y, grid.x);
+				
+			// make filename for the fields for future restart
+			sprintf(name,"Wfields_%d.dat",_kk + iteration_num);
+			MAKE_FILENAME(fullname_Wfields,name);
+			Wrestart=fopen(fullname_Wfields,"w");
+		}
+	} else if (_id == 1 && write_snapshot != 0) {
+		// saves the snapshot (the rest) and fields for future restart
+		fprintf(snapshot,"%g %g %g %g %g %g %g %g\n",
+						(_i1 - 0.5)*dx, (_j1 - 0.5)*dy, (_k1 - 0.5)*dz,
+						rho[_i1][_j1][_k1], df_drho[_i1][_j1][_k1], grad[_i1][_j1][_k1],
+						sub[_i1][_j1][_k1], wa[_i1][_j1][_k1]);
+			
+		fprintf(Wrestart,"%16.12f \n", wa[_i1][_j1][_k1]);
+	} else if (_id == 2 && write_snapshot == 1) {
+		// evaluates pressure and calculates free energy
+		FILE *wPressure;
+		// close snapshot and field files
+		fclose(snapshot); fclose(Wrestart);
+			
+		// save the pressure at the node [2][5][5]
+		wPressure = fopen(fullname_press,"a");
+		fprintf (wPressure,	"step %d. The gas pressure is %6.10f \n",
+						 _kk + iteration_num, kbT*10.*(rho[2][5][5] + (0.5 * V11 * SQR(rho[2][5][5])) + (2. * W111 * CUBE(rho[2][5][5])/3.)) );
+		fclose(wPressure);
+			
+		// calculate free energy
+		printf("Starting to calculate free energy\n");
+		CalcFreeEn(iteration_num, _kk + iteration_num, NVT);
+	} else {
+	}
+}
+
+/* calculation of the Q coefficient!!! */
+void CalcPartSumQ (int _NVT) {
+	int i1, j1, k1;
+	
+	Q = 0.;
+	
+	if (_NVT == 1) {
+		for(i1 = 1; i1 < grid.x+1; i1++){
+			XYa[i1] = 0.;
+			for(j1 = 1; j1 < grid.y+1; j1++){
+				YYa[j1] = 0.;
+				for(k1 = 1; k1 < grid.z+1; k1++){
+					YYa[j1] = YYa[j1] + koeff_z_open[k1]*exp(-wa[i1][j1][k1])*dz;
+				}
+				XYa[i1] = XYa[i1] + koeff_y_semi[j1]*YYa[j1]*dy;
+			}
+			Q = Q + koeff_x_semi[i1]*XYa[i1]*dx;
+		}
+	} else {
+		total_N = 0.;
+		
+		for(i1 = 1; i1 < grid.x+1; i1++){
+			XYa[i1]  = 0.;
+			XYat[i1] = 0.;
+			for(j1 = 1; j1 < grid.y+1; j1++){
+				YYa[j1]  = 0.;
+				YYat[j1] = 0.;
+				for(k1 = 1; k1 < grid.z+1; k1++){
+					YYa[j1]  = YYa[j1]  + koeff_z_open[k1]*exp(-wa[i1][j1][k1])*dz;
+					YYat[j1] = YYat[j1] + koeff_z_open[k1]*rho[i1][j1][k1]*dz;
+				}
+				XYa[i1]  = XYa[i1]  + koeff_y_semi[j1]*YYa[j1]*dy;
+				XYat[i1] = XYat[i1] + koeff_y_semi[j1]*YYat[j1]*dy;
+			}
+			Q = Q + koeff_x_semi[i1]*XYa[i1]*dx;
+			total_N = total_N + koeff_x_semi[i1]*XYat[i1]*dx;
+		}
+	}
+	printf("finished CalcPartSumQ. Value of Q is %8.4f, total_N is %8.4f\n", Q, total_N);
+}
+
 void CalcFreeEn (int temp_iteration_num, int temp_kk, int temp_NVT) {
 	V_ZERO (rho_fd);
 	V_ZERO (rho_bd);
@@ -555,8 +668,8 @@ void CalcFreeEn (int temp_iteration_num, int temp_kk, int temp_NVT) {
 				
 				if (k == 1) {
 					rho_cd.z = (rho[i][j][k+1] + rho[i][j][k] - 2.*rho[i][j][k-1])/dz;
-//				} else if (k == grid.z) {
-//					rho_cd.z = (2.*rho[i][j][k+1] - rho[i][j][k] - rho[i][j][k-1])/dz;
+					//				} else if (k == grid.z) {
+					//					rho_cd.z = (2.*rho[i][j][k+1] - rho[i][j][k] - rho[i][j][k-1])/dz;
 				} else {
 					rho_cd.z = (rho[i][j][k+1] - rho[i][j][k-1])/dz;
 				}
@@ -580,123 +693,12 @@ void CalcFreeEn (int temp_iteration_num, int temp_kk, int temp_NVT) {
 	
 	/* print into the file */
 	fprintf(free_energy_out,"%d %10.8f %10.8f %10.8f\n", temp_kk, Q,
-			sum_final * kbT, total_N);
+					sum_final * kbT, total_N);
 	
 	/* print onto the screen */
 	printf("%d %10.8f %10.8f %g %10.8f %8.4f\n", temp_kk, sum_final * kbT, Q, convergence, total_N, seconds);
 	
 	fclose(free_energy_out);
-}
-
-void PrintSnapField (int _id, int _kk, int _i1, int _j1, int _k1) {
-	FILE *snapshot, *Wrestart;
-	int i1, j1, k1;
-	
-	if (_id == 0 && _kk % TWRITE == 0) {
-		FILE *iterkeeper;
-		extern double check_N;
-		
-		/* output into files */
-		time(&later);
-		seconds = difftime(later,now); now = later;
-			
-		/* calculate check_N and test it output onto the screen every step */
-		check_N = 0.;
-		for (i1 = 1; i1 < grid.x+1; i1++){
-			XYat[i1] = 0.;
-			for (j1 = 1; j1 < grid.y+1; j1++){
-				YYat[j1] = 0.;
-				for (k1 = 1; k1 < grid.z+1; k1++){
-					YYat[j1] = YYat[j1] + koeff_z_open[k1]*rho[i1][j1][k1]*dz;
-				}
-				XYat[i1] = XYat[i1] + koeff_y_semi[j1]*YYat[j1]*dy;
-			}
-			check_N = check_N + koeff_x_semi[i1]*XYat[i1]*dx;
-		}
-		if (write_snapshot == 1) {
-			// save current interation number
-			MAKE_FILENAME(fullname_iter,"iteration.dat");
-			iterkeeper = fopen(fullname_iter,"w");
-			fprintf(iterkeeper,"%d %10.8f\n",_kk + iteration_num, total_N);
-			fclose(iterkeeper);
-				
-			// save snapshots (here is a caption ONLY)
-			sprintf(name,"snapshot_%d.dat",_kk + iteration_num);
-			MAKE_FILENAME(fullname_snap,name);
-			snapshot = fopen(fullname_snap,"w");
-			fprintf (snapshot,"VARIABLES = \"X\", \"Y\", \"Z\",\"density\",\"df_drho\",\"grad\",\"subpot\",\"wa\",\n");
-			fprintf (snapshot,"ZONE I=%d, J=%d, K=%d, F=POINT\n",grid.z, grid.y, grid.x);
-				
-			// make filename for the fields for future restart
-			sprintf(name,"Wfields_%d.dat",_kk + iteration_num);
-			MAKE_FILENAME(fullname_Wfields,name);
-			Wrestart=fopen(fullname_Wfields,"w");
-		}
-	} else if (_id == 1 && write_snapshot != 0) {
-		// save the snapshot (the rest) and fields for future restart
-		fprintf(snapshot,"%g %g %g %g %g %g %g %g\n",
-						(_i1 - 0.5)*dx, (_j1 - 0.5)*dy, (_k1 - 0.5)*dz,
-						rho[_i1][_j1][_k1], df_drho[_i1][_j1][_k1], grad[_i1][_j1][_k1],
-						sub[_i1][_j1][_k1], wa[_i1][_j1][_k1]);
-			
-		fprintf(Wrestart,"%16.12f \n", wa[_i1][_j1][_k1]);
-	} else if (_id == 2 && write_snapshot == 1) {
-		FILE *wPressure;
-		// close snapshot and field files
-		fclose(snapshot); fclose(Wrestart);
-			
-		// save the gas pressure
-		wPressure = fopen(fullname_press,"a");
-		fprintf (wPressure,	"step %d. The gas pressure is %6.10f \n",
-						 _kk + iteration_num, kbT*10.*(rho[2][5][5] + (0.5 * V11 * SQR(rho[2][5][5])) +
-																					(2. * W111 * CUBE(rho[2][5][5])/3.)) );
-		fclose(wPressure);
-			
-		// calculate free energy
-		CalcFreeEn(iteration_num, _kk + iteration_num, NVT);
-	} else {
-	}
-}
-
-/* calculation of the Q coefficient!!! */
-void CalcPartSumQ (int _NVT) {
-	int i1, j1, k1;
-	
-	Q = 0.;
-	
-	if (_NVT == 1) {
-		for(i1 = 1; i1 < grid.x+1; i1++){
-			XYa[i1] = 0.;
-			for(j1 = 1; j1 < grid.y+1; j1++){
-				YYa[j1] = 0.;
-				for(k1 = 1; k1 < grid.z+1; k1++){
-					YYa[j1] = YYa[j1] + koeff_z_open[k1]*exp(-wa[i1][j1][k1])*dz;
-				}
-				XYa[i1] = XYa[i1] + koeff_y_semi[j1]*YYa[j1]*dy;
-			}
-			Q = Q + koeff_x_semi[i1]*XYa[i1]*dx;
-		}
-	} else {
-		total_N = 0.;
-		
-		for(i1 = 1; i1 < grid.x+1; i1++){
-			XYa[i1]  = 0.;
-			XYat[i1] = 0.;
-			for(j1 = 1; j1 < grid.y+1; j1++){
-				YYa[j1]  = 0.;
-				YYat[j1] = 0.;
-				for(k1 = 1; k1 < grid.z+1; k1++){
-					YYa[j1]  = YYa[j1]  + koeff_z_open[k1]*exp(-wa[i1][j1][k1])*dz;
-					YYat[j1] = YYat[j1] + koeff_z_open[k1]*rho[i1][j1][k1]*dz;
-				}
-				XYa[i1]  = XYa[i1]  + koeff_y_semi[j1]*YYa[j1]*dy;
-				XYat[i1] = XYat[i1] + koeff_y_semi[j1]*YYat[j1]*dy;
-			}
-			Q = Q + koeff_x_semi[i1]*XYa[i1]*dx;
-			total_N = total_N + koeff_x_semi[i1]*XYat[i1]*dx;
-		}
-	}
-	printf("finished CalcPartSumQ. Value of Q is %8.4f, total_N is %8.4f\n", Q, total_N);
 }
 
 void DefineSimpson () {
