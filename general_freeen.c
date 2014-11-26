@@ -674,6 +674,10 @@ void CalcFreeEn (int temp_iteration_num, int temp_kk, int _NVT) {
 			YYa[j] = 0.;
 			for(k = 1; k < grid.z+1; k++){
 				printf("i, j, k are %d %d %d\n", i, j, k);
+				printf("rho[i-1][j][k] is %8.4f, rho[i+1][j][k] is %8.4f\n",
+							 rho[i+1][j][k], rho[i-1][j][k]);
+				printf("rho[i][j+1][k] is %8.4f, rho[i][j-1][k] is %8.4f\n",
+							 rho[i][j+1][k], rho[i][j-1][k]);
 				/* central differences * 2. in 3 dimensions */
 				rho_cd.x = (rho[i+1][j][k] - rho[i-1][j][k])/dx;
 				rho_cd.y = (rho[i][j+1][k] - rho[i][j-1][k])/dy;
