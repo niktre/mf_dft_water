@@ -665,7 +665,8 @@ void CalcFreeEn (int temp_iteration_num, int temp_kk, int _NVT) {
 	term_sub = 0.;
 	
 	sum_final = 0.;
-	
+	printf("sub[1][1][1] is %8.4f\n", sub[1][1][1]);
+
 	printf("Starting free energy loop\n");
 	/* calculation of the free energy*/
 	for(i = 1; i < grid.x+1; i++){
