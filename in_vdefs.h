@@ -11,7 +11,7 @@ typedef struct {int x, y, z;} VecI;
 
 #define MAKE_FILENAME(full, file)						\
 	{strcpy (full, foldername);							\
-	strcat (full,file);}
+	 strcat (full,file);}
 
 /* memory allocation */
 #define ALLOC_MEM(a, n, t) a = (t *) malloc ((n) * sizeof (t))

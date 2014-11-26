@@ -23,19 +23,19 @@ substrateNode *subNode;
 int nSub;
 
 /* names and folders */
-char name[100];
-char foldername[100];
-char fullname_iter[100];
-char fullname_Wfields[100];
-char fullname_Wsub[100];
-char fullname_free_en[100];
-char fullname_conv[100];
-char fullname_snap[100];
-char fullname_param[100];
-char fullname_press[100];
-char fullname_test[100];
-char path[50];
-char folder[50];
+char name[120];
+char foldername[120];
+char fullname_iter[120];
+char fullname_Wfields[120];
+char fullname_Wsub[120];
+char fullname_free_en[120];
+char fullname_conv[120];
+char fullname_snap[120];
+char fullname_param[120];
+char fullname_press[120];
+char fullname_test[120];
+char path[80];
+char folder[80];
 double write_snapshot;
 
 /* global properties of the system*/
@@ -142,8 +142,8 @@ int main (int argc, char **argv){
 	
 	AllocArrays ();
 	
-	FILE  *Wtest, *Wrestart, *Wfields, *Wsub,
-				*snapshot, *iterkeeper, *converge, *wPressure;
+	FILE  *Wtest, *Wrestart, *Wfields, *Wsub;
+	FILE	*snapshot, *iterkeeper, *converge, *wPressure;
 		
 	/* Lengths are measured in nm */
 	iterations = 6000000;
@@ -192,6 +192,8 @@ int main (int argc, char **argv){
 	printf ("set up fields to zero\n");
 
 	AllocSubstrate ();
+	
+	printf ("Finished substrate' allocation\n");
 	
 	if (restart == 0) {
 		/* set up the flat substrate */
@@ -345,11 +347,16 @@ int main (int argc, char **argv){
 		printf ("Finished with initial fields creation! total_N is %10.8f\n",total_N);
 		
 	} else {	// if we are restarting an old calculation
+		printf("inside restart == 1; iteration_num = %d\n", iteration_num);
 		// read iteration number and total number of particles for restart
 		MAKE_FILENAME(fullname_iter,"iteration.dat");
 		iterkeeper = fopen(fullname_iter,"r");
+		printf ("fullname_iter is %s\n", fullname_iter);
 		fscanf(iterkeeper,"%d %lf\n",&iteration_num, &total_N);
 		fclose(iterkeeper);
+		printf("closed iterkeeper\n");
+		
+		// make new value for total_N (just in case it matters...)
 		
 		// read filename of the fields for restart
 		sprintf(name,"Wfields_%d.dat",iteration_num);
