@@ -542,33 +542,43 @@ void PrintSnapField (int _id, int _kk, int _i1, int _j1, int _k1) {
 			iterkeeper = fopen(fullname_iter,"w");
 			fprintf(iterkeeper,"%d %10.8f\n",_kk + iteration_num, total_N);
 			fclose(iterkeeper);
-				
-			// save snapshots (here is a caption ONLY)
+		}
+	} else if (_id == 1 && write_snapshot != 0) {
+		FILE *snapshot, *Wrestart;
+
+		if (_i1 == 1 && _j1 == 1 && _k1==1) {
+			// create snapshot header and open the file
 			sprintf(name,"snapshot_%d.dat",_kk + iteration_num);
 			MAKE_FILENAME(fullname_snap,name);
 			snapshot = fopen(fullname_snap,"w");
 			fprintf (snapshot,"VARIABLES = \"X\", \"Y\", \"Z\",\"density\",\"df_drho\",\"grad\",\"subpot\",\"wa\",\n");
 			fprintf (snapshot,"ZONE I=%d, J=%d, K=%d, F=POINT\n",grid.z, grid.y, grid.x);
-				
-			// make filename for the fields for future restart
+			
+			// make filename for the fields and open the file
 			sprintf(name,"Wfields_%d.dat",_kk + iteration_num);
 			MAKE_FILENAME(fullname_Wfields,name);
 			Wrestart=fopen(fullname_Wfields,"w");
 		}
-	} else if (_id == 1 && write_snapshot != 0) {
+		
 		// saves the snapshot (the rest) and fields for future restart
 		fprintf(snapshot,"%g %g %g %g %g %g %g %g\n",
 						(_i1 - 0.5)*dx, (_j1 - 0.5)*dy, (_k1 - 0.5)*dz,
 						rho[_i1][_j1][_k1], df_drho[_i1][_j1][_k1], grad[_i1][_j1][_k1],
 						sub[_i1][_j1][_k1], wa[_i1][_j1][_k1]);
-			
+		
 		fprintf(Wrestart,"%16.12f \n", wa[_i1][_j1][_k1]);
+		
+		if (_i1 == grid.x && _j1 == grid.y && _k1 == grid.z) {
+			// close snapshot and field files
+			printf("Trying to close snapshot and Wrestart files\n");
+			fclose(snapshot); fclose(Wrestart);
+		}
+
 	} else if (_id == 2 && write_snapshot == 1) {
 		// evaluates pressure and calculates free energy
 		FILE *wPressure;
-		// close snapshot and field files
-		fclose(snapshot); fclose(Wrestart);
-			
+		
+		printf("Opening wPressure file\n");
 		// save the pressure at the node [2][5][5]
 		wPressure = fopen(fullname_press,"a");
 		fprintf (wPressure,	"step %d. The gas pressure is %6.10f \n",
@@ -623,7 +633,7 @@ void CalcPartSumQ (int _NVT) {
 	printf("finished CalcPartSumQ. Value of Q is %8.4f, total_N is %8.4f\n", Q, total_N);
 }
 
-void CalcFreeEn (int temp_iteration_num, int temp_kk, int temp_NVT) {
+void CalcFreeEn (int temp_iteration_num, int temp_kk, int _NVT) {
 	V_ZERO (rho_fd);
 	V_ZERO (rho_bd);
 	V_ZERO (rho_cd);
@@ -644,7 +654,7 @@ void CalcFreeEn (int temp_iteration_num, int temp_kk, int temp_NVT) {
 		// do nothing
 	}
 	
-	if (temp_NVT == 1) {
+	if (_NVT == 1) {
 		term1 = -total_N * (log(Q / total_N) + 1.);
 	} else {
 		term1 =	-rho_liq * Q * exp(rho_liq * (V11 + W111 * rho_liq));
