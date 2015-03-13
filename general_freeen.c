@@ -353,13 +353,13 @@ int main (int argc, char **argv){
 		fscanf(iterkeeper,"%d %lf\n",&iteration_num, &total_N);
 		fclose(iterkeeper);
 		
-		// make new value for total_N (just in case it matters...)
-		
 		// read filename of the fields for restart
-		sprintf(name,"Wfields_%d.dat",iteration_num);
-		MAKE_FILENAME(fullname_Wfields,name);
-		Wfields=fopen(fullname_Wfields,"r");
-		printf ("fullname_Wfields is %s\n", fullname_Wfields);
+		if (iteration_num != 0) {
+			sprintf(name,"Wfields_%d.dat",iteration_num);
+			MAKE_FILENAME(fullname_Wfields,name);
+			Wfields=fopen(fullname_Wfields,"r");
+			printf ("fullname_Wfields is %s\n", fullname_Wfields);
+		}
 		
 		// read substrate potential for restart
 		MAKE_FILENAME(fullname_Wsub,"substrate.dat");
@@ -373,7 +373,16 @@ int main (int argc, char **argv){
 					SET_TO_ZERO (grad,i1,j1,k1);
 					
 					/* read in the field and the substrate potential */
-					fscanf(Wfields,"%lf \n",&wa[i1][j1][k1]);
+					if (iteration_num == 0) {
+						// create fiels from scratch
+						wa[i1][j1][k1] = 0.;
+						if ((0.5 * dz + (k1 - 1)*dz) > 2. * corr.z){
+							wa[i1][j1][k1] = V11*rho_liq + W111*SQR(rho_liq);
+							total_N = total_N + 1.;
+						}
+					} else {
+						fscanf(Wfields,"%lf \n",&wa[i1][j1][k1]);
+					}
 					fscanf(Wsub,"%lf \n",&sub[i1][j1][k1]);
 				}
 			}
@@ -381,7 +390,9 @@ int main (int argc, char **argv){
 		printf ("Finished with scanning substrate file!\n");
 		printf ("total_N is %10.8f\n", total_N);
 
-		fclose(Wfields);
+		if (iteration_num != 0) {
+			fclose(Wfields);
+		}
 	}
 	
 	for (kk = 0; kk < iterations; kk++){

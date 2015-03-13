@@ -10,7 +10,6 @@
 		B468E86819D4482D0080C3D7 /* general_freeen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = general_freeen.c; path = ../general_freeen.c; sourceTree = "<group>"; };
 		B468E86919D4482D0080C3D7 /* gcan_2014_07_08.out */ = {isa = PBXFileReference; lastKnownFileType = file; name = gcan_2014_07_08.out; path = ../gcan_2014_07_08.out; sourceTree = "<group>"; };
 		B468E86A19D4482D0080C3D7 /* old_general_freeen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = old_general_freeen.c; path = ../old_general_freeen.c; sourceTree = "<group>"; };
-		B468E86B19D4482D0080C3D7 /* old_general_freeen.c~ */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "old_general_freeen.c~"; path = "../old_general_freeen.c~"; sourceTree = "<group>"; };
 		B468E86C19D4482D0080C3D7 /* in_proto.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = in_proto.h; path = ../in_proto.h; sourceTree = "<group>"; };
 		B468E86D19D4482D0080C3D7 /* in_vdefs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = in_vdefs.h; path = ../in_vdefs.h; sourceTree = "<group>"; };
 		B468E86E19D4482D0080C3D7 /* io_interface.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = io_interface.c; path = ../io_interface.c; sourceTree = "<group>"; };
@@ -21,6 +20,8 @@
 		B468E87319D4482D0080C3D7 /* simple_test.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = simple_test.c; path = ../simple_test.c; sourceTree = "<group>"; };
 		B468E87419D4482D0080C3D7 /* submit_gcan_freeen.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = submit_gcan_freeen.sh; path = ../submit_gcan_freeen.sh; sourceTree = "<group>"; };
 		B468E87619D449750080C3D7 /* makefile */ = {isa = PBXFileReference; explicitFileType = sourcecode.make; fileEncoding = 4; name = makefile; path = ../makefile; sourceTree = "<group>"; };
+		B4E94E551A44836E004F85AB /* gen_2014_09_30.out */ = {isa = PBXFileReference; lastKnownFileType = file; name = gen_2014_09_30.out; path = ../gen_2014_09_30.out; sourceTree = "<group>"; };
+		B4E94E561A4483CE004F85AB /* run */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = run; path = ../run; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -30,14 +31,15 @@
 				B468E87619D449750080C3D7 /* makefile */,
 				B468E86819D4482D0080C3D7 /* general_freeen.c */,
 				B468E86919D4482D0080C3D7 /* gcan_2014_07_08.out */,
+				B4E94E551A44836E004F85AB /* gen_2014_09_30.out */,
 				B468E86A19D4482D0080C3D7 /* old_general_freeen.c */,
-				B468E86B19D4482D0080C3D7 /* old_general_freeen.c~ */,
 				B468E86C19D4482D0080C3D7 /* in_proto.h */,
 				B468E86D19D4482D0080C3D7 /* in_vdefs.h */,
 				B468E86E19D4482D0080C3D7 /* io_interface.c */,
 				B468E86F19D4482D0080C3D7 /* itoa.c */,
 				B468E87019D4482D0080C3D7 /* reverse.c */,
 				B468E87119D4482D0080C3D7 /* romberg.c */,
+				B4E94E561A4483CE004F85AB /* run */,
 				B468E87219D4482D0080C3D7 /* send_job_gcan.sh */,
 				B468E87319D4482D0080C3D7 /* simple_test.c */,
 				B468E87419D4482D0080C3D7 /* submit_gcan_freeen.sh */,
@@ -206,6 +208,7 @@
 				B468E86719D447FB0080C3D7 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
