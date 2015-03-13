@@ -1,4 +1,4 @@
-NAME = run
+NAME = gen_2015_03_13.out
 
 CLEANNAME = clean
 
