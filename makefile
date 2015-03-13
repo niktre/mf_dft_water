@@ -13,7 +13,7 @@ all: $(NAME)
 		echo All done
 
 $(CLEANNAME):
-		$(RM) $(OBJECT) 
+		$(RM) $(OBJECT) $(NAME) 
 
 $(NAME):	$(OBJECT)
 		$(CC) -o $@ $(CFLAGS) $(OBJECT) $(LFLAGS)
