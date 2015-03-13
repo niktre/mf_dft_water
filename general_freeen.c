@@ -306,7 +306,10 @@ int main (int argc, char **argv){
 
 		MAKE_FILENAME(fullname_Wsub,"substrate.dat");
 		Wsub=fopen(fullname_Wsub,"a");
-				
+			
+		VecI currNode;
+		V_SET (currNode, 0, 0, 0);
+	
 		// assign the potential provided by the corrugations
 		for (i1 = 1; i1 < grid.x+1; i1++){
 			for (j1 = 1; j1 < grid.y+1; j1++){
@@ -314,29 +317,35 @@ int main (int argc, char **argv){
 					/* create substrate potential */
 					sub[i1][j1][k1] = subPotZ[k1]; // set 1d potential of a flat substrate
 
-					if ((((i1 - 1) % (int)((corr.x + cav.x) / dx)) * dx < corr.x) &&
-						 (((j1 - 1) % (int)((corr.y + cav.y) / dy)) * dy < corr.y) &&
-						 ((k1 - .5) * dz < corr.z) ) {
+//					if ((((i1 - 1) % (int)((corr.x + cav.x) / dx)) * dx < corr.x) &&
+//						 (((j1 - 1) % (int)((corr.y + cav.y) / dy)) * dy < corr.y) &&
+					if ( (i1 - 1) * dx < corr.x && (j1 - 1) * dy < corr.y && (k1 - .5) * dz < corr.z ) {
 						// if inside a corrugation, set large potential:
 						sub[i1][j1][k1] =	150000.;
 					} else {
 						// if the node is accesible to fluid, calculate sub.potential there
 						for(sn = 0; sn < nSub; sn++){
+							V_SET (currNode, (int)((nRep.x-1) / 2) * grid.x + i1, (int)((nRep.y-1) / 2) * grid.y + j1, k1);
 							// account for PBC in x
-							dist2.x = SQR(subNode[sn].rs.x - (int) ((nRep.x - 1) / 2) * grid.x - i1);
+							dist2.x = SQR(subNode[sn].rs.x - currNode.x);
 							// account for PBC in y
-							dist2.y = SQR(subNode[sn].rs.y - (int) ((nRep.y - 1) / 2) * grid.y - j1);
+							dist2.y = SQR(subNode[sn].rs.y - currNode.y);
 							// no PBC in z!
-							dist2.z = SQR(subNode[sn].rs.z - k1);
+							dist2.z = SQR(subNode[sn].rs.z - currNode.z);
 		
 							distance2 = dist2.x * dx2 + dist2.y * dy2 + dist2.z * dz2;
 							if (distance2 < rrCut) {
 								ri2 = sigma_sub2/distance2;
 								ri6 = CUBE(ri2);
-								sub[i1][j1][k1] +=	4. * eps * ri6 * (ri6 - 1.);
+								sub[i1][j1][k1] += ri6 * (ri6 - 1.);
 							}
 						}
 					}
+					if (isinf(sub[i1][j1][k1]) == 1) {
+						printf("Error when calculating substrate potentiali at i=[%4d], j=[%4d]\n", i1, j1);
+						exit(EXIT_FAILURE);
+					}
+					sub[i1][j1][k1] *= 4. * eps;
 					fprintf(Wsub,"%16.12f \n", sub[i1][j1][k1]);
 				}
 			}
@@ -693,13 +702,19 @@ void CalcFreeEn (int temp_iteration_num, int temp_kk, int _NVT) {
 				term_sub = sub[i][j][k] * rho[i][j][k];
 				
 				YYa[j] = YYa[j] +  koeff_z_open[k]*(term2 + term3 + term4 + term_sub)*dz;
+
+				/* print into the file */
+				fprintf(free_energy_out, "j:%4d, koeff_z:%10.8f, 1:%10.8f, 2:%10.8f, 3:%10.8f, 4:%10.8f, sub:%10.8f, %10.8f, \n", j, koeff_z_open[k], term1, term2, term3, term4, term_sub, YYa[j]);
 			}
 			XYa[i] = XYa[i] + koeff_y_semi[j]*YYa[j]*dy;
+			fprintf(free_energy_out, "i:%4d j:%4d , koeff_y:%10.8f, YYa:%10.8f, XYa:%10.8f \n", i, j, koeff_y_semi[j], YYa[j], XYa[i]);
 		}
 		sum_final  = sum_final  + koeff_x_semi[i]*XYa[i]*dx;
+		fprintf(free_energy_out, "koeff_x:%10.8f, XYa:%10.8f, sum_final:%10.8f \n  ---------------\n", koeff_x_semi[i], XYa[i], sum_final);
 	}
 
 	sum_final =  sum_final + term1;
+	fprintf(free_energy_out, "%10.8f \n", sum_final);
 	
 	/* print into the file */
 	fprintf(free_energy_out,"%d %10.8f %10.8f %10.8f\n", temp_kk, Q,
