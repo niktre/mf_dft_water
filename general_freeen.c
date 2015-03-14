@@ -137,6 +137,7 @@ int main (int argc, char **argv){
 	int i1,j1,k1,kk;
 	int is, js, ks, sn;
 	int subDepth;
+	double maxSubPot;
 	VecR cm0;
 	double rrToCm0;
 	
@@ -165,6 +166,7 @@ int main (int argc, char **argv){
 	 Create nodes of flat substrate */
 	nSub = 0;
 	subDepth = (int) (rCut / dz);
+	maxSubPot = 0.;
 
 	// calculate total number of box replicas in x,y-directions,
   // including the original box
@@ -224,6 +226,7 @@ int main (int argc, char **argv){
 				}
 			}
 			subPotZ[k1] *=	4. * eps;
+			maxSubPot = MAX(maxSubPot, subPotZ[k1]);
 			/* in the end we have one dimensional (w.r.t. z) potential */
 		}
 		printf ("Made the 0th substrate layer. It has %d nodes\n", nSub);
@@ -243,9 +246,7 @@ int main (int argc, char **argv){
 			for (j1 = 1; j1 < nRep.y * grid.y + 1; j1++){
 				for (k1 = 1; k1 < grid.z+1; k1++){
 					/* create substrate nodes taking into account corrugation */
-					if ((((i1 - 1) % (int)((corr.x + cav.x) / dx)) * dx < corr.x) &&
-							(((j1 - 1) % (int)((corr.y + cav.y) / dy)) * dy < corr.y) &&
-							((k1 - .5)*dz < corr.z) ) {
+					if ((((i1 - 1) % grid.x) * dx < corr.x) && (((j1 - 1) % grid.y) * dy < corr.y) && ((k1 - .5)*dz < corr.z) ) {
 						V_SET(subNode[nSub].rs, i1, j1, k1);
 						++nSub;
 					} else {
@@ -308,7 +309,8 @@ int main (int argc, char **argv){
 		Wsub=fopen(fullname_Wsub,"a");
 			
 		VecI currNode;
-		V_SET (currNode, 0, 0, 0);
+		V_ZERO (currNode);
+		subDepth = (int) ((corr.z + rCut) / dz) + 1;
 	
 		// assign the potential provided by the corrugations
 		for (i1 = 1; i1 < grid.x+1; i1++){
@@ -316,41 +318,33 @@ int main (int argc, char **argv){
 				for (k1 = 1; k1 < grid.z+1; k1++){
 					/* create substrate potential */
 					sub[i1][j1][k1] = subPotZ[k1]; // set 1d potential of a flat substrate
-
 //					if ((((i1 - 1) % (int)((corr.x + cav.x) / dx)) * dx < corr.x) &&
 //						 (((j1 - 1) % (int)((corr.y + cav.y) / dy)) * dy < corr.y) &&
-					if ( (i1 - 1) * dx < corr.x && (j1 - 1) * dy < corr.y && (k1 - .5) * dz < corr.z ) {
+					if ( (i1 - 1) * dx < corr.x && (j1 - 1) * dy < corr.y && (k1 - 0.5) * dz < corr.z ) {
 						// if inside a corrugation, set large potential:
-						sub[i1][j1][k1] =	150000.;
+						sub[i1][j1][k1] =	maxSubPot;
+					} else if (k1 >= subDepth) {
 					} else {
 						// if the node is accesible to fluid, calculate sub.potential there
 						for(sn = 0; sn < nSub; sn++){
 							V_SET (currNode, (int)((nRep.x-1) / 2) * grid.x + i1, (int)((nRep.y-1) / 2) * grid.y + j1, k1);
-							// account for PBC in x
-							dist2.x = SQR(subNode[sn].rs.x - currNode.x);
-							// account for PBC in y
-							dist2.y = SQR(subNode[sn].rs.y - currNode.y);
-							// no PBC in z!
-							dist2.z = SQR(subNode[sn].rs.z - currNode.z);
-		
+							V_SET (dist2, SQR(subNode[sn].rs.x - currNode.x), SQR(subNode[sn].rs.y - currNode.y), SQR(subNode[sn].rs.z - currNode.z));
 							distance2 = dist2.x * dx2 + dist2.y * dy2 + dist2.z * dz2;
 							if (distance2 < rrCut) {
 								ri2 = sigma_sub2/distance2;
 								ri6 = CUBE(ri2);
-								sub[i1][j1][k1] += ri6 * (ri6 - 1.);
+								sub[i1][j1][k1] += 4. * eps * ri6 * (ri6 - 1.);
 							}
 						}
 					}
-					if (isinf(sub[i1][j1][k1]) == 1) {
-						printf("Error when calculating substrate potentiali at i=[%4d], j=[%4d]\n", i1, j1);
+					if (isinf(sub[i1][j1][k1]) == 1 || isnan(sub[i1][j1][k1]) == 1) {
+						printf("Error when calculating substrate potential at i=[%4d], j=[%4d], k=[%4d]\n", i1, j1, k1);
 						exit(EXIT_FAILURE);
 					}
-					sub[i1][j1][k1] *= 4. * eps;
 					fprintf(Wsub,"%16.12f \n", sub[i1][j1][k1]);
 				}
 			}
 			printf ("Finished subsrtrate creation for i1 = %d \n", i1);
-			printf (" dist2.x is %d \n", SQR(- (int) ((nRep.x - 1) / 2) * grid.x - i1));
 		}
 		fclose(Wsub);
 		printf ("Finished with initial fields creation! total_N is %10.8f\n",total_N);
