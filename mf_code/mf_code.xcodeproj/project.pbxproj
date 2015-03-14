@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXFileReference section */
+		B43D772F1AB311C5004B79BC /* send_gc_groove.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = send_gc_groove.sh; path = ../send_gc_groove.sh; sourceTree = "<group>"; };
+		B43D77301AB311C5004B79BC /* send_gc_pillar.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = send_gc_pillar.sh; path = ../send_gc_pillar.sh; sourceTree = "<group>"; };
+		B43D77311AB311C5004B79BC /* submit_gc_groove.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = submit_gc_groove.sh; path = ../submit_gc_groove.sh; sourceTree = "<group>"; };
+		B43D77321AB311C5004B79BC /* submit_gc_pillar.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = submit_gc_pillar.sh; path = ../submit_gc_pillar.sh; sourceTree = "<group>"; };
 		B468E86819D4482D0080C3D7 /* general_freeen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = general_freeen.c; path = ../general_freeen.c; sourceTree = "<group>"; };
 		B468E86919D4482D0080C3D7 /* gcan_2014_07_08.out */ = {isa = PBXFileReference; lastKnownFileType = file; name = gcan_2014_07_08.out; path = ../gcan_2014_07_08.out; sourceTree = "<group>"; };
 		B468E86A19D4482D0080C3D7 /* old_general_freeen.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = old_general_freeen.c; path = ../old_general_freeen.c; sourceTree = "<group>"; };
@@ -16,33 +20,31 @@
 		B468E86F19D4482D0080C3D7 /* itoa.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = itoa.c; path = ../itoa.c; sourceTree = "<group>"; };
 		B468E87019D4482D0080C3D7 /* reverse.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = reverse.c; path = ../reverse.c; sourceTree = "<group>"; };
 		B468E87119D4482D0080C3D7 /* romberg.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = romberg.c; path = ../romberg.c; sourceTree = "<group>"; };
-		B468E87219D4482D0080C3D7 /* send_job_gcan.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = send_job_gcan.sh; path = ../send_job_gcan.sh; sourceTree = "<group>"; };
 		B468E87319D4482D0080C3D7 /* simple_test.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = simple_test.c; path = ../simple_test.c; sourceTree = "<group>"; };
-		B468E87419D4482D0080C3D7 /* submit_gcan_freeen.sh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.sh; name = submit_gcan_freeen.sh; path = ../submit_gcan_freeen.sh; sourceTree = "<group>"; };
 		B468E87619D449750080C3D7 /* makefile */ = {isa = PBXFileReference; explicitFileType = sourcecode.make; fileEncoding = 4; name = makefile; path = ../makefile; sourceTree = "<group>"; };
 		B4E94E551A44836E004F85AB /* gen_2014_09_30.out */ = {isa = PBXFileReference; lastKnownFileType = file; name = gen_2014_09_30.out; path = ../gen_2014_09_30.out; sourceTree = "<group>"; };
-		B4E94E561A4483CE004F85AB /* run */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = run; path = ../run; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		B468E85D19D447FB0080C3D7 = {
 			isa = PBXGroup;
 			children = (
-				B468E87619D449750080C3D7 /* makefile */,
-				B468E86819D4482D0080C3D7 /* general_freeen.c */,
 				B468E86919D4482D0080C3D7 /* gcan_2014_07_08.out */,
+				B468E86819D4482D0080C3D7 /* general_freeen.c */,
 				B4E94E551A44836E004F85AB /* gen_2014_09_30.out */,
 				B468E86A19D4482D0080C3D7 /* old_general_freeen.c */,
 				B468E86C19D4482D0080C3D7 /* in_proto.h */,
 				B468E86D19D4482D0080C3D7 /* in_vdefs.h */,
 				B468E86E19D4482D0080C3D7 /* io_interface.c */,
 				B468E86F19D4482D0080C3D7 /* itoa.c */,
+				B468E87619D449750080C3D7 /* makefile */,
 				B468E87019D4482D0080C3D7 /* reverse.c */,
 				B468E87119D4482D0080C3D7 /* romberg.c */,
-				B4E94E561A4483CE004F85AB /* run */,
-				B468E87219D4482D0080C3D7 /* send_job_gcan.sh */,
 				B468E87319D4482D0080C3D7 /* simple_test.c */,
-				B468E87419D4482D0080C3D7 /* submit_gcan_freeen.sh */,
+				B43D772F1AB311C5004B79BC /* send_gc_groove.sh */,
+				B43D77301AB311C5004B79BC /* send_gc_pillar.sh */,
+				B43D77311AB311C5004B79BC /* submit_gc_groove.sh */,
+				B43D77321AB311C5004B79BC /* submit_gc_pillar.sh */,
 			);
 			sourceTree = "<group>";
 		};

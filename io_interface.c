@@ -7,7 +7,7 @@
 #endif
 
 void InitParameters () {
-	extern VecR L, corr, cav;
+	extern VecR L, corr;
 	extern VecI grid;
 	extern double dx, dy, dz;
 	extern double rCut, sigma_sub, eps;
@@ -28,7 +28,7 @@ void InitParameters () {
 	printf("rCut %8.4f  sigma_sub %8.4f  eps %8.4f\n", rCut, sigma_sub, eps);
 	printf("The pressure is %6.10f \n",  kbT*10.*(rho_liq + (0.5*V11*SQR(rho_liq)) + (2.*W111*CUBE(rho_liq)/3.)));
 	printf("corrugation	is %6.2f %6.2f %6.2f\n", corr.x, corr.y, corr.z);
-	printf("cavity is %6.2f %6.2f %6.2f\n", cav.x, cav.y, cav.z);
+	printf("cavity is %6.2f %6.2f %6.2f\n", L.x - corr.x, L.y - corr.y, L.z - corr.z);
 	printf("rCut %8.4f  sigma_sub %8.4f  eps %8.4f\n", rCut, sigma_sub, eps);
 	printf("nMol %8.4f \n", nMol);
 	printf("nDims %d \n", nDims);
@@ -40,7 +40,7 @@ void InitParameters () {
 }
 
 void StoreParameters () {
-	extern VecR L, corr, cav;
+	extern VecR L, corr;
 	extern VecI grid;
 	extern double rCut, sigma_sub, eps;
 	extern double nMol;
@@ -64,7 +64,7 @@ void StoreParameters () {
 	fprintf(inParam, "iterations	%8d\n", iterations);
 	fprintf(inParam, "lambda %8.6f\n", lambda);
 	fprintf(inParam, "corrugation	%6.2f %6.2f %6.2f\n", corr.x, corr.y, corr.z);
-	fprintf(inParam, "cavity	%6.2f %6.2f %6.2f\n", cav.x, cav.y, cav.z);
+	fprintf(inParam, "cavity is %6.2f %6.2f %6.2f\n", L.x - corr.x, L.y - corr.y, L.z - corr.z);
 	fprintf(inParam, "rCut %8.4f  sigma_sub %8.4f  eps %8.4f\n", rCut, sigma_sub, eps);
 	fprintf(inParam, "nMol %8.4f \n", nMol);
 	fprintf(inParam, "nDims %d \n", nDims);
@@ -86,7 +86,6 @@ void PassConsoleParams (int argc, char **argv) {
 	int L_flag = 0;
 	int grid_flag = 0;
 	int corr_flag = 0;
-	int cav_flag = 0;
 	int eps_flag = 0;
 	int nMol_flag = 0;
 	int nDims_flag = 0;
@@ -96,7 +95,6 @@ void PassConsoleParams (int argc, char **argv) {
 	extern VecR L;
 	extern VecI grid;
 	extern VecR corr;
-	extern VecR cav;
 	extern double eps;
 	extern double nMol;
 	extern int nDims;
@@ -156,11 +154,6 @@ void PassConsoleParams (int argc, char **argv) {
 			corr.y = atof(argv[++argz]);
 			corr.z = atof(argv[++argz]);
 			corr_flag = 1;
-		} else if (strcmp(argv[argz], "-cav") == 0) {
-			cav.x = atof(argv[++argz]);
-			cav.y = atof(argv[++argz]);
-			cav.z = atof(argv[++argz]);
-			cav_flag = 1;
 		} else if (strcmp(argv[argz], "-eps") == 0) {
 			eps = atof(argv[++argz]);
 			eps_flag = 1;
@@ -205,10 +198,6 @@ void PassConsoleParams (int argc, char **argv) {
 	
 	if (corr_flag == 0) {
 		corr.x = 0.8; corr.y = 0.8; corr.z = 0.8;
-	}
-	
-	if (cav_flag == 0) {
-		cav.x = corr.x; cav.y = corr.y; cav.z = 0.;
 	}
 	
 	if (eps_flag == 0) {

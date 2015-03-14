@@ -55,7 +55,6 @@ VecR L;								// box length
 VecI nRep;						// number of replicas of the initial box
 VecI grid;						// number of grid points
 VecR corr;						// dimensions of the corrugation
-VecR cav;							// cavity dimensions (z-one is irrelevant)
 VecR rho_fd;					// forward difference in density
 VecR rho_bd;					// backward difference in density
 VecR rho_cd;					// central difference in density
@@ -262,7 +261,7 @@ int main (int argc, char **argv){
 			rrToCm0 = sqrt(nMol / (rho_liq * M_PI * L.y));
 		}
 		rrToCm0 += .02 * dx;
-		V_SET(cm0, .5 * (L.x - cav.x), .5 * L.y, rrToCm0 + dz);
+		V_SET(cm0, .5 * corr.x, .5 * L.y, rrToCm0 + dz);
 		rrToCm0 *= rrToCm0;
 		dV = dx*dy*dz;
 		
@@ -318,8 +317,6 @@ int main (int argc, char **argv){
 				for (k1 = 1; k1 < grid.z+1; k1++){
 					/* create substrate potential */
 					sub[i1][j1][k1] = subPotZ[k1]; // set 1d potential of a flat substrate
-//					if ((((i1 - 1) % (int)((corr.x + cav.x) / dx)) * dx < corr.x) &&
-//						 (((j1 - 1) % (int)((corr.y + cav.y) / dy)) * dy < corr.y) &&
 					if ( (i1 - 1) * dx < corr.x && (j1 - 1) * dy < corr.y && (k1 - 0.5) * dz < corr.z ) {
 						// if inside a corrugation, set large potential:
 						sub[i1][j1][k1] =	maxSubPot;

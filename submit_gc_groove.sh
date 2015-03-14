@@ -8,15 +8,14 @@
 # The job is located in the current working directory:
 #$ -cwd
 
-rm -rf /data/isilon/tretyakov/mf_lb/e${eps}_den${den}_L${Lx}-${Ly}-${Lz}_C${Cx}_D${Dx}/
-mkdir /data/isilon/tretyakov/mf_lb/e${eps}_den${den}_L${Lx}-${Ly}-${Lz}_C${Cx}_D${Dx}/
-./gen_2015_03_13.out -path pckr160 -folder e${eps}_den${den}_L${Lx}-${Ly}-${Lz}_C${Cx}_D${Dx}/ \
+rm -rf /data/isilon/tretyakov/mf_lb/L${Lx}-${Ly}-${Lz}_C${Cx}/
+mkdir /data/isilon/tretyakov/mf_lb/L${Lx}-${Ly}-${Lz}_C${Cx}/
+./gen_2015_03_13.out -path pckr160 -folder L${Lx}-${Ly}-${Lz}_C${Cx}/ \
 -den ${den} \
 -restart 0 \
 -lambda ${lambda} \
 -Lbox ${Lx} ${Ly} ${Lz} \
 -corr ${Cx} ${Cy} ${Cz} \
--cav ${Dx} ${Dy} ${Dz} \
 -eps ${eps} \
 -nMol 2000 \
 -nDims ${nDims} \
