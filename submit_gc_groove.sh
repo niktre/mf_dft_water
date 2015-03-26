@@ -1,5 +1,5 @@
 #!/bin/sh
-#$ -N GCgro_8.8
+#$ -N GCgro_24.4
 # Send mail to me:
 #$ -M tretyakov@mpip-mainz.mpg.de
 #$ -q Single.q

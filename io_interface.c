@@ -14,6 +14,7 @@ void InitParameters () {
 	extern double nMol;
 	extern int nDims;
 	extern int NVT;
+	extern int filled_init;
 	extern double rho_liq, kbT;
 	
 	extern char fullname_press[];
@@ -32,6 +33,7 @@ void InitParameters () {
 	printf("rCut %8.4f  sigma_sub %8.4f  eps %8.4f\n", rCut, sigma_sub, eps);
 	printf("nMol %8.4f \n", nMol);
 	printf("nDims %d \n", nDims);
+	printf("filled_init %d \n", filled_init);
 	
 	MAKE_FILENAME(fullname_press, "pressure.dat");
 	wPressure = fopen(fullname_press,"a");
@@ -46,6 +48,7 @@ void StoreParameters () {
 	extern double nMol;
 	extern int nDims;
 	extern int NVT;
+	extern int filled_init;
 	extern double rho_liq, lambda;
 	extern int iterations;
 	
@@ -68,6 +71,7 @@ void StoreParameters () {
 	fprintf(inParam, "rCut %8.4f  sigma_sub %8.4f  eps %8.4f\n", rCut, sigma_sub, eps);
 	fprintf(inParam, "nMol %8.4f \n", nMol);
 	fprintf(inParam, "nDims %d \n", nDims);
+	fprintf(inParam, "filled_init %d \n", filled_init);
 	fclose(inParam);
 }
 
@@ -90,6 +94,7 @@ void PassConsoleParams (int argc, char **argv) {
 	int nMol_flag = 0;
 	int nDims_flag = 0;
 	int NVT_flag = 0;
+	int filled_init_flag = 0;
 	
 	extern double rho_liq;
 	extern VecR L;
@@ -99,6 +104,7 @@ void PassConsoleParams (int argc, char **argv) {
 	extern double nMol;
 	extern int nDims;
 	extern int NVT;
+	extern int filled_init;
 	
 	extern double dx, dy, dz, dx2, dy2, dz2, volume;
 	
@@ -163,6 +169,9 @@ void PassConsoleParams (int argc, char **argv) {
 		} else if (strcmp(argv[argz], "-nDims") == 0) {
 			nDims = atof(argv[++argz]);
 			nDims_flag = 1;
+		} else if (strcmp(argv[argz], "-filled_init") == 0) {
+			filled_init = atof(argv[++argz]);
+			filled_init_flag = 1;
 		} else if (strcmp(argv[argz], "-NVT") == 0) {
 			NVT = atof(argv[++argz]);
 			NVT_flag = 1;
@@ -210,6 +219,10 @@ void PassConsoleParams (int argc, char **argv) {
 	
 	if (nDims_flag == 0) {
 		nDims = 3;
+	}
+	
+	if (filled_init_flag == 0) {
+		filled_init = 0;
 	}
 	
 	if (NVT_flag == 0) {

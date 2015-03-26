@@ -48,6 +48,7 @@ double lambda;				// relaxation parameter of the SC-scheme
 int	restart;					// restart flag
 int	iteration_num;		// if restarted, the last existing iteration
 int	iterations;				// desired iterations limit
+int	filled_init;				// initial state of the interface
 double convergence;		// convergence
 
 /* size and grid related properties */
@@ -290,9 +291,19 @@ int main (int argc, char **argv){
 					} else {
 						// grand canonical ensemble
 						wa[i1][j1][k1] = 0.;
-						if ((0.5 * dz + (k1 - 1)*dz) > 2. * corr.z){
-							wa[i1][j1][k1] = V11*rho_liq + W111*SQR(rho_liq);
-							total_N = total_N + 1.;
+						// if initial liquid state is the one with the flat interface
+						if (filled_init == 0) {
+							if ( (k1 - 0.5) * dz > 1.4 * corr.z){
+								wa[i1][j1][k1] = V11*rho_liq + W111*SQR(rho_liq);
+								total_N = total_N + 1.;
+							}
+						} else {
+						// if initial liquid state is the filled one
+							if ( (i1 - 1) * dx < corr.x && (j1 - 1) * dy < corr.y && (k1 - 0.5) * dz < corr.z ) {
+							} else {
+								wa[i1][j1][k1] = V11*rho_liq + W111*SQR(rho_liq);
+								total_N = total_N + 1.;
+							}
 						}
 					}
 				}
@@ -694,26 +705,18 @@ void CalcFreeEn (int temp_iteration_num, int temp_kk, int _NVT) {
 				
 				YYa[j] = YYa[j] +  koeff_z_open[k]*(term2 + term3 + term4 + term_sub)*dz;
 
-				/* print into the file */
-				fprintf(free_energy_out, "j:%4d, koeff_z:%10.8f, 1:%10.8f, 2:%10.8f, 3:%10.8f, 4:%10.8f, sub:%10.8f, %10.8f, \n", j, koeff_z_open[k], term1, term2, term3, term4, term_sub, YYa[j]);
 			}
 			XYa[i] = XYa[i] + koeff_y_semi[j]*YYa[j]*dy;
-			fprintf(free_energy_out, "i:%4d j:%4d , koeff_y:%10.8f, YYa:%10.8f, XYa:%10.8f \n", i, j, koeff_y_semi[j], YYa[j], XYa[i]);
 		}
 		sum_final  = sum_final  + koeff_x_semi[i]*XYa[i]*dx;
-		fprintf(free_energy_out, "koeff_x:%10.8f, XYa:%10.8f, sum_final:%10.8f \n  ---------------\n", koeff_x_semi[i], XYa[i], sum_final);
 	}
-
 	sum_final =  sum_final + term1;
-	fprintf(free_energy_out, "%10.8f \n", sum_final);
 	
 	/* print into the file */
-	fprintf(free_energy_out,"%d %10.8f %10.8f %10.8f\n", temp_kk, Q,
-					sum_final * kbT, total_N);
+	fprintf(free_energy_out,"%d %10.8f %10.8f %10.8f\n", temp_kk, Q, sum_final * kbT, total_N);
 	
 	/* print onto the screen */
-	printf("%d %10.8f %10.8f %g %10.8f\n",
-				 temp_kk, sum_final * kbT, Q, convergence, total_N);
+	printf("%d %10.8f %10.8f %g %10.8f\n", temp_kk, sum_final * kbT, Q, convergence, total_N);
 	
 	fclose(free_energy_out);
 }
