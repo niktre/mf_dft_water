@@ -147,7 +147,7 @@ int main (int argc, char **argv){
 	FILE	*snapshot, *iterkeeper, *converge, *wPressure;
 		
 	/* Lengths are measured in nm */
-	iterations = 6000000;
+	iterations = 60000000;
 	kbT = 4.116404397;
 	rCut = 5.;
 	sigma_sub = .3;
@@ -262,7 +262,7 @@ int main (int argc, char **argv){
 			rrToCm0 = sqrt(nMol / (rho_liq * M_PI * L.y));
 		}
 		rrToCm0 += .02 * dx;
-		V_SET(cm0, .5 * corr.x, .5 * L.y, rrToCm0 + dz);
+		V_SET(cm0, .5 * L.x, .5 * L.y, rrToCm0 + dz);
 		rrToCm0 *= rrToCm0;
 		dV = dx*dy*dz;
 		
