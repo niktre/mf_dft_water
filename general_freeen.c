@@ -142,7 +142,7 @@ int main (int argc, char **argv){
 	FILE	*snapshot, *iterkeeper, *converge, *wPressure;
 		
 	/* Lengths are measured in nm */
-	iterations = 6000000;
+	iterations = 60000000;
 	kbT = 4.116404397;
 	rCut = 5.;
 	sigma_sub = .3;

@@ -1,5 +1,5 @@
 #!/bin/sh
-#$ -N GCgro_24.4
+#$ -N GCgro_7.0
 # Send mail to me:
 #$ -M tretyakov@mpip-mainz.mpg.de
 #$ -q Single.q
@@ -10,7 +10,7 @@
 
 rm -rf /data/isilon/tretyakov/mf_lb/L${Lx}-${Ly}-${Lz}_C${Cx}/
 mkdir /data/isilon/tretyakov/mf_lb/L${Lx}-${Ly}-${Lz}_C${Cx}/
-./gen_2015_03_13.out -path pckr160 -folder L${Lx}-${Ly}-${Lz}_C${Cx}/ \
+./gen_2015_03_25.out -path pckr160 -folder L${Lx}-${Ly}-${Lz}_C${Cx}/ \
 -den ${den} \
 -restart 0 \
 -lambda ${lambda} \
@@ -19,4 +19,5 @@ mkdir /data/isilon/tretyakov/mf_lb/L${Lx}-${Ly}-${Lz}_C${Cx}/
 -eps ${eps} \
 -nMol 2000 \
 -nDims ${nDims} \
--NVT ${NVT}
+-NVT ${NVT} \
+-filled_init 0
