@@ -40,55 +40,52 @@ char folder[80];
 double write_snapshot;
 
 /* global properties of the system*/
-double kbT;						// kbT :-)
-double rho_liq;				// density in the bulk (at the top of the box)
-double lambda;				// relaxation parameter of the SC-scheme
+double kbT;								// kbT :-)
+double rho_liq;						// density in the bulk (at the top of the box)
+double lambda;							// relaxation parameter of the SC-scheme
 
 /* properties of the run */
-int	restart;					// restart flag
-int	iteration_num;		// if restarted, the last existing iteration
-int	iterations;				// desired iterations limit
-int	filled_init;				// initial state of the interface
-double convergence;		// convergence
+int	restart;							// restart flag
+int	iteration_num;					// if restarted, the last existing iteration
+int	iterations;						// desired iterations limit
+int	filled_init;					// initial state of the interface
+double convergence;					// convergence
 
 /* size and grid related properties */
-VecR L;								// box length
-VecI nRep;						// number of replicas of the initial box
-VecI grid;						// number of grid points
-VecR corr;						// dimensions of the corrugation
-VecR rho_fd;					// forward difference in density
-VecR rho_bd;					// backward difference in density
-VecR rho_cd;					// central difference in density
-double dx,dy,dz;			// size of the grid cell
-double dx2, dy2, dz2;	// size of the grid cell squared
-double volume;				// volume of the computation domain
-double dV;						// volume of the elementary cell
-double nMol;					// number of water molecules for NVT-ensemble
-int nDims;						// number of dimensions
-int NVT;							// canonical ensemble
+VecR 	L;									// box length
+VecI 	nRep;								// number of replicas of the initial box
+VecI 	grid;								// number of grid points
+VecR 	corr;								// dimensions of the corrugation
+VecR 	rho_fd, rho_bd, rho_cd;		// forw, backw and central density differences
+double dx,dy,dz;						// size of the grid cell
+double dx2, dy2, dz2;				// size of the grid cell squared
+double volume;							// volume of the computation domain
+double dV;								// volume of the elementary cell
+double nMol;							// number of water molecules for NVT-ensemble
+int 	nDims;							// number of dimensions
+int 	NVT;								// canonical ensemble
 
 /* substrate' parameters */
-double rCut;					// cut off distance for potential
-double rrCut;					// squared cut off distance for potential
-double sigma_sub;			// sigma of the substrate potential
-double sigma_sub2;		// sigma of the substrate potential squared
-double eps;						// amplitude of the potential
+double rCut;							// cut off distance for potential
+double rrCut;							// squared cut off distance for potential
+double sigma_sub;						// sigma of the substrate potential
+double sigma_sub2;					// sigma of the substrate potential squared
+double eps;								// amplitude of the potential
 
 /* statistical properties of the ensemble */
-double total_N;				// total number of molecules in the system
-double Q;							// statistical sum
+double total_N;						// total number of molecules in the system
+double Q;								// statistical sum
 
 /* time variables for simple profiling */
-time_t begin, end;		// two marks of the time-measurement
-double seconds;				// length of time interval between 2 measurements
+time_t begin, end;					// two marks of the time-measurement
+double seconds;						// length of time interval between measurements
 
 /* integration variables */
-double *koeff_x_semi;
-double *koeff_y_semi;
-double *koeff_z_open;
+double *koeff_x_semi, *koeff_y_semi, *koeff_z_open;
 double *XYa,*YYa;
 double *XYat,*YYat;
 
+/* substrate potential variables */
 double *subPotZ;
 
 /* relevant fields */
@@ -111,7 +108,6 @@ double ***grad;
 
 /*
  c        On periodic boundary conditions:
- c
  c       |<------------- L.x ------------->|
  c       |                                 |
  c    0__|__1__2__.....__grid.x-1__grid.x__|__grid.x+1
@@ -122,7 +118,6 @@ double ***grad;
  c
  c    Make sure since the integrations will be performed by
  c    Simpson method grid.x grid.y grid.z must be odd numbers
- c
  */
 
 int main (int argc, char **argv){
@@ -151,14 +146,16 @@ int main (int argc, char **argv){
 	kbT = 4.116404397;
 	rCut = 5.;
 	sigma_sub = .3;
-	sigma_sub2 = SQR(sigma_sub);
 
+	/* Squared lengths */
+	sigma_sub2 = SQR(sigma_sub);
 	rrCut = SQR(rCut);
+
 	strcpy (foldername, path);
 	strcat (foldername, folder);
     
-	InitParameters ();
-	StoreParameters ();
+	InitParameters ();				// read parameters from input line
+	StoreParameters ();				// save all parameters to the file
 	
 	DefineSimpson ();
 	
@@ -173,7 +170,7 @@ int main (int argc, char **argv){
 	V_SET (nRep, (int) (2 * ((int) (rCut / L.x) + 1) + 1),
 							 (int) (2 * ((int) (rCut / L.y) + 1) + 1),
 							 0);
-	printf ("total number of box replicas in x is %8d, in y is %8d\n", nRep.x, nRep.y);
+	printf ("Use %d parent cell replicas in x- and %8d in y-dir.\n", nRep.x, nRep.y);
 	
 	// set all the fields to zero
 	for (i1 = 0; i1 < grid.x+1; i1++){
@@ -241,12 +238,14 @@ int main (int argc, char **argv){
 		printf ("Creating substrate nodes and liquid field\n");
 		printf ("corr.z is %8.4f\n", corr.z);
 		
-		// create corrugation sites (inkl. replicas of the box)
+		// create corrugation sites (inkl. replicas of the parent cell)
 		for (i1 = 1; i1 < nRep.x * grid.x + 1; i1++){
 			for (j1 = 1; j1 < nRep.y * grid.y + 1; j1++){
 				for (k1 = 1; k1 < grid.z+1; k1++){
 					/* create substrate nodes taking into account corrugation */
-					if ((((i1 - 1) % grid.x) * dx < corr.x) && (((j1 - 1) % grid.y) * dy < corr.y) && ((k1 - .5)*dz < corr.z) ) {
+					if ( (((i1 - 1) % grid.x) * dx < corr.x) && 
+										 (((j1 - 1) % grid.y) * dy < corr.y) && 
+										 ((k1 - .5)*dz < corr.z) ) {
 						V_SET(subNode[nSub].rs, i1, j1, k1);
 						++nSub;
 					} else {
@@ -255,35 +254,57 @@ int main (int argc, char **argv){
 			}
 		}
 		
-		// create liquid		
+		/* create spherical (nDims == 3) or cylindrical droplet (nDims == 2) */
 		if (nDims == 3) {
-			rrToCm0 = pow(.75 * nMol / (rho_liq * M_PI),1./3.);
+			switch (filled_init) {
+				case 0: 	rrToCm0 = pow(.75 * nMol / (rho_liq * M_PI),1./3.);
+							break;
+				case 1:	rrToCm0 = pow(1.5 * nMol / (rho_liq * M_PI),1./3.); 
+							break;
+			}
 		} else if (nDims == 2) {
-			rrToCm0 = sqrt(nMol / (rho_liq * M_PI * L.y));
+			switch (filled_init) {
+				case 0:	rrToCm0 = sqrt(nMol / (rho_liq * M_PI * L.y));
+							break;
+				case 1:	rrToCm0 = sqrt(2. * nMol / (rho_liq * M_PI * L.y)); 
+							break;
+			}
 		}
-		rrToCm0 += .02 * dx;
-		V_SET(cm0, .5 * corr.x, .5 * L.y, rrToCm0 + dz);
-		rrToCm0 *= rrToCm0;
-		dV = dx*dy*dz;
-		
+
+		rrToCm0 += .02 * dx;				// increase the radius by 2%
+
+		/* put drop's CoM into the xy-plane's middle and adjust its z-position */
+		switch (filled_init) {
+			case 0:	V_SET(cm0, .5 * corr.x, .5 * L.y, rrToCm0 + dz);
+						break;
+			case 1:	V_SET(cm0, .5 * corr.x, .5 * L.y, dz);
+						break;
+		}
+
+		rrToCm0 *= rrToCm0;				// make a square out of drop's radius
+
 		printf ("rrToCm0 is %8.4f\n", rrToCm0);
 		printf ("cm0 is %8.4f %8.4f %8.4f \n", cm0.x, cm0.y, cm0.z);
 
+		dV = dx*dy*dz;						// set volume of the discretisation cell
+		
 		for (i1 = 1; i1 < grid.x+1; i1++){
 			for (j1 = 1; j1 < grid.y+1; j1++){
 				for (k1 = 1; k1 < grid.z+1; k1++){
 					/* create initial liquid field */
 					if (NVT == 1) {
-						if (nDims == 3 && (SQR((i1 - 0.5)*dx-cm0.x)+SQR((j1 - 0.5)*dy-cm0.y)
-															 +SQR((k1 - 0.5 - 1.)*dz - corr.z - cm0.z) < rrToCm0)
-													 && (filled_x_grids < nMol / (rho_liq * dV))) {
+						if (nDims == 3 && 
+								(SQR((i1 - 0.5)*dx - cm0.x) + 
+								 SQR((j1 - 0.5)*dy - cm0.y) + 
+								 SQR((k1 - 0.5 - 1.)*dz - corr.z - cm0.z) < rrToCm0) &&
+							  	(filled_x_grids < nMol / (rho_liq * dV))) {
 							wa[i1][j1][k1] = V11*rho_liq + W111*SQR(rho_liq);
 							total_N = total_N + 1.;
 							++filled_x_grids;
-						} else if	(nDims == 2 &&
-											 (SQR((i1 - 0.5)*dx-cm0.x) +
-												SQR((k1 - 0.5 - 1.)*dz - corr.z - cm0.z) < rrToCm0) &&
-											 (filled_x_grids < nMol / (rho_liq * dV))) {
+						} else if (nDims == 2 && 
+								(SQR((i1 - 0.5)*dx-cm0.x) + 
+								 SQR((k1 - 0.5 - 1.)*dz - corr.z - cm0.z) < rrToCm0) && 
+								(filled_x_grids < nMol / (rho_liq * dV))) {
 							wa[i1][j1][k1] = V11*rho_liq + W111*SQR(rho_liq);
 							total_N = total_N + 1.;
 							++filled_x_grids;
@@ -546,7 +567,6 @@ int main (int argc, char **argv){
 
 void PrintSnapField (int _id, int _kk, int _i1, int _j1, int _k1) {
 	FILE *snapshot, *Wrestart;
-	int i1, j1, k1;
 	
 	if (_id == 0 && _kk % TWRITE == 0) {
 		if (write_snapshot == 1) {
