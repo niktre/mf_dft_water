@@ -222,7 +222,6 @@ int main (int argc, char **argv){
 					}
 				}
 			}
-			subPotZ[k1] *=	4. * eps;
 			maxSubPot = MAX(maxSubPot, subPotZ[k1]);
 			/* in the end we have one dimensional (w.r.t. z) potential */
 		}
@@ -258,26 +257,29 @@ int main (int argc, char **argv){
 		if (nDims == 3) {
 			switch (filled_init) {
 				case 0: 	rrToCm0 = pow(.75 * nMol / (rho_liq * M_PI),1./3.);
+							rrToCm0 += .02 * dx;				// increase the radius by 2%
 							break;
 				case 1:	rrToCm0 = pow(1.5 * nMol / (rho_liq * M_PI),1./3.); 
+							rrToCm0 -= .02 * rrToCm0;		// decrease the radius by 2%
 							break;
 			}
 		} else if (nDims == 2) {
 			switch (filled_init) {
 				case 0:	rrToCm0 = sqrt(nMol / (rho_liq * M_PI * L.y));
+							rrToCm0 += .02 * dx;				// increase the radius by 2%
 							break;
 				case 1:	rrToCm0 = sqrt(2. * nMol / (rho_liq * M_PI * L.y)); 
+							rrToCm0 -= .02 * rrToCm0;		// decrease the radius by 2%
 							break;
 			}
 		}
 
-		rrToCm0 += .02 * dx;				// increase the radius by 2%
 
 		/* put drop's CoM into the xy-plane's middle and adjust its z-position */
 		switch (filled_init) {
-			case 0:	V_SET(cm0, .5 * corr.x, .5 * L.y, rrToCm0 + dz);
+			case 0:	V_SET(cm0, .5 * L.x, .5 * L.y, rrToCm0 + dz);
 						break;
-			case 1:	V_SET(cm0, .5 * corr.x, .5 * L.y, dz);
+			case 1:	V_SET(cm0, .5 * L.x, .5 * L.y, dz);
 						break;
 		}
 
@@ -308,6 +310,7 @@ int main (int argc, char **argv){
 							wa[i1][j1][k1] = V11*rho_liq + W111*SQR(rho_liq);
 							total_N = total_N + 1.;
 							++filled_x_grids;
+						} else {
 						}
 					} else {
 						// grand canonical ensemble
@@ -362,10 +365,12 @@ int main (int argc, char **argv){
 							if (distance2 < rrCut) {
 								ri2 = sigma_sub2/distance2;
 								ri6 = CUBE(ri2);
-								sub[i1][j1][k1] += 4. * eps * ri6 * (ri6 - 1.);
+								sub[i1][j1][k1] += ri6 * (ri6 - 1.);
 							}
 						}
 					}
+					sub[i1][j1][k1] *=	4. * eps;
+
 					if (isinf(sub[i1][j1][k1]) == 1 || isnan(sub[i1][j1][k1]) == 1) {
 						printf("Error when calculating substrate potential at i=[%4d], j=[%4d], k=[%4d]\n", i1, j1, k1);
 						exit(EXIT_FAILURE);

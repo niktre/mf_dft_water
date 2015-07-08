@@ -1,5 +1,5 @@
 #!/bin/sh
-#$ -N GCpil_18.0
+#$ -N e1GCpi9.4
 # Send mail to me:
 #$ -M tretyakov@mpip-mainz.mpg.de
 #$ -q Single.q
@@ -8,11 +8,11 @@
 # The job is located in the current working directory:
 #$ -cwd
 
-#rm -rf /data/isilon/tretyakov/mf_lb/L${Lx}-${Ly}-${Lz}_C${Cx}/
-#mkdir /data/isilon/tretyakov/mf_lb/L${Lx}-${Ly}-${Lz}_C${Cx}/
-./gen_2015_03_25.out -path pckr160 -folder L${Lx}-${Ly}-${Lz}_C${Cx}/ \
+#rm -rf /data/isilon/tretyakov/mf_lb/e${eps}_L${Lx}-${Ly}-${Lz}_C${Cx}/
+mkdir /data/isilon/tretyakov/mf_lb/e${eps}_L${Lx}-${Ly}-${Lz}_C${Cx}/
+./gen_2015_05_12.out -path pckr160 -folder e${eps}_L${Lx}-${Ly}-${Lz}_C${Cx}/ \
 -den ${den} \
--restart 1 \
+-restart ${restart} \
 -lambda ${lambda} \
 -Lbox ${Lx} ${Ly} ${Lz} \
 -corr ${Cx} ${Cy} ${Cz} \
