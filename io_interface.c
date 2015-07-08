@@ -6,6 +6,10 @@
 	#define W111 0.023102120829070
 #endif
 
+#ifndef TWRITE
+	#define TWRITE 50000
+#endif
+
 void InitParameters () {
 	extern VecR L, corr;
 	extern VecI grid;
@@ -107,7 +111,7 @@ void PassConsoleParams (int argc, char **argv) {
 	extern int filled_init;
 	
 	extern double dx, dy, dz, dx2, dy2, dz2, volume;
-	
+  
 	/* check for path */
 	if (strcmp(argv[argz], "-path") == 0) {
 		if (strcmp(argv[++argz], "pckr160") == 0) {
@@ -118,6 +122,7 @@ void PassConsoleParams (int argc, char **argv) {
 			strcpy(path,"/home/tretyakov/mf_freen/");
 		} else if (strcmp(argv[argz], "mbpr") == 0) {
 			strcpy(path,"/Users/niktre/simulation/60_mf_lb_sh/");
+			 printf("path is %s\n", path);
 		} else {
 			printf ("Error! Unknown system specification!\n");
 		}
@@ -125,7 +130,7 @@ void PassConsoleParams (int argc, char **argv) {
 	} else {
 		printf ("Error! No path is given!\n");
 	}
-	
+
 	/* check for folder */
 	if (strcmp(argv[argz], "-folder") == 0) {
 		strcpy(folder,argv[++argz]);
@@ -133,7 +138,7 @@ void PassConsoleParams (int argc, char **argv) {
 	} else {
 		printf ("Error! No folder is given!\n");
 	}
-	
+
 	/* check for parameters */
 	while ((argz < argc) && (argv[argz][0] == '-')) {
 		if (strcmp(argv[argz], "-den") == 0) {
@@ -238,4 +243,362 @@ void PassConsoleParams (int argc, char **argv) {
 	dz2 = SQR(dz);
 	
 	volume = L.x * L.y * L.z;
+}
+
+/* write down the sub potential into the output file */
+void PrintSubFile () {
+	extern int myRank, MPIsize;
+	extern char foldername[], fullname_Wsub[], fullname_profiling[];
+	extern VecI grid;
+	extern double ***sub, seconds;
+	extern time_t begin;
+	time_t endInit;
+
+	FILE *Wsub;
+  
+	MPI_Status status;
+	int *sbuf=NULL, *rbuf=NULL;
+
+	sbuf = (int*) malloc(sizeof(int));
+	rbuf = (int*) malloc(sizeof(int));
+
+	sbuf[0] = 0;
+  
+	MAKE_FILENAME(fullname_Wsub,"substrate.dat");
+  
+	if (myRank == 0) {
+		Wsub=fopen(fullname_Wsub,"a");
+		for (int i = 1; i < grid.x+1; i++){
+			for (int j = 1; j < grid.y+1; j++){
+				for (int k = 1; k < grid.z+1; k++){
+					fprintf(Wsub,"%16.12f \n", sub[i][j][k]);
+				}
+			}
+		}
+		fclose(Wsub);
+		
+		if (MPIsize > 1) {
+			MPI_Send (sbuf, 1, MPI_INT, myRank + 1, 101, MPI_COMM_WORLD);
+		} else {
+			// do not send anything, there is only 1 CPU
+		}
+		
+	} else {
+		MPI_Recv (rbuf, 1, MPI_INT, myRank - 1, 101, MPI_COMM_WORLD, &status);
+		Wsub=fopen(fullname_Wsub,"a");
+		for (int i = 1; i < grid.x+1; i++){
+			for (int j = 1; j < grid.y+1; j++){
+				for (int k = 1; k < grid.z+1; k++){
+					fprintf(Wsub,"%16.12f \n", sub[i][j][k]);
+				}
+			}
+		}
+		fclose(Wsub);
+		if (myRank != MPIsize - 1) {
+			MPI_Send (sbuf, 1, MPI_INT, myRank + 1, 101, MPI_COMM_WORLD);
+		} else {
+		}
+	}
+
+	if (myRank == MPIsize - 1) {
+		/* output into profiling statistics */
+		time(&endInit);
+		seconds = difftime(endInit,begin);
+		
+		FILE *timeprof;
+		MAKE_FILENAME(fullname_profiling, "timeprof.dat");
+		timeprof = fopen(fullname_profiling,"a");
+		fprintf (timeprof, "initialisation and substrate are done in %g seconds\n", seconds);
+		fclose(timeprof);
+		
+		printf ("initialisation and substrate are done in %g seconds\n", seconds);
+	}
+	
+	// free buffers
+	free(rbuf);
+	free(sbuf);
+}
+
+void PrintSnapField (int _id, int _kk) {
+	extern int write_snapshot, myRank, MPIsize, iteration_num, globStartIdx, subGridX;
+	extern char foldername[], fullname_iter[], fullname_profiling[], name[];
+	extern char fullname_snap[], fullname_Wfields[];
+	extern double total_N, seconds, dz, dx, dy;
+	extern VecI grid;
+	extern time_t begin, end;
+	extern double ***rho, ***sub, ***wa, ***df_drho, ***grad;
+	FILE *snapshot, *Wrestart;
+	
+	MPI_Status status;
+	int *sbuf=NULL, *rbuf=NULL;
+	
+	sbuf = (int*) malloc(sizeof(int));
+	rbuf = (int*) malloc(sizeof(int));
+	
+	sbuf[0] = 0;
+	
+	if (_id == 0 && _kk % TWRITE == 0) {
+		if (write_snapshot == 1 && myRank == 0) {
+			// save current interation number
+			FILE *iterkeeper;
+			MAKE_FILENAME(fullname_iter,"iteration.dat");
+			iterkeeper = fopen(fullname_iter,"w");
+			fprintf(iterkeeper,"%d %10.8f\n",_kk + iteration_num, total_N);
+			fclose(iterkeeper);
+			
+			/* output into profiling statistics */
+			time(&end);
+			seconds = difftime(end,begin);
+			begin = end;
+			
+			FILE *timeprof;
+			MAKE_FILENAME(fullname_profiling, "timeprof.dat");
+			timeprof = fopen(fullname_profiling,"a");
+			fprintf (timeprof, "%d %g\n", _kk + iteration_num, seconds);
+			fclose(timeprof);
+			
+		} else {
+		}
+	} else if (_id == 1 && write_snapshot == 1) {
+		FILE *snapshot, *Wrestart;
+		
+		// set the name of the files for all CPUs and prepare the HEADERS by CPU0
+		// create snapshot header and open the file
+		sprintf(name,"snapshot_%d.dat",_kk + iteration_num);
+		MAKE_FILENAME(fullname_snap,name);
+		if (myRank == 0) {
+			snapshot = fopen(fullname_snap,"w");
+			fprintf (snapshot,"VARIABLES = \"X\", \"Y\", \"Z\",\"density\",\"df_drho\",\"grad\",\"subpot\",\"wa\",\n");
+			fprintf (snapshot,"ZONE I=%d, J=%d, K=%d, F=POINT\n",grid.z, grid.y, subGridX);
+			fclose(snapshot);
+		}
+		// make filename for the fields and open the file
+		sprintf(name,"Wfields_%d.dat",_kk + iteration_num);
+		MAKE_FILENAME(fullname_Wfields,name);
+		
+		if (myRank == 0) {
+			// saves the snapshot (the rest) and fields for future restart
+			snapshot = fopen(fullname_snap,"a");
+			Wrestart = fopen(fullname_Wfields,"a");
+			for (int i = 1; i < grid.x+1; i++){
+				for (int j = 1; j < grid.y+1; j++){
+					for (int k = 1; k < grid.z+1; k++){
+						fprintf(snapshot,"%g %g %g %g %g %g %g %g\n",
+					  (globStartIdx + i - 0.5)*dx, (j - 0.5)*dy, (k - 0.5)*dz,
+					  rho[i][j][k], df_drho[i][j][k], grad[i][j][k],
+					  sub[i][j][k], wa[i][j][k]);
+						fprintf(Wrestart,"%16.12f \n", wa[i][j][k]);
+					}
+				}
+			}
+			fclose(snapshot); fclose(Wrestart);
+			
+			if (MPIsize > 1) {
+				MPI_Send (sbuf, 1, MPI_INT, myRank + 1, 103, MPI_COMM_WORLD);
+			} else {
+				// do not send anything, there is only 1 CPU
+			}
+			
+		} else {
+			MPI_Recv (rbuf, 1, MPI_INT, myRank - 1, 103, MPI_COMM_WORLD, &status);
+			// saves the snapshot (the rest) and fields for future restart
+			snapshot = fopen(fullname_snap,"a");
+			Wrestart = fopen(fullname_Wfields,"a");
+			for (int i = 1; i < grid.x+1; i++){
+				for (int j = 1; j < grid.y+1; j++){
+					for (int k = 1; k < grid.z+1; k++){
+						fprintf(snapshot,"%g %g %g %g %g %g %g %g\n",
+								  (globStartIdx + i - 0.5)*dx, (j - 0.5)*dy, (k - 0.5)*dz,
+								  rho[i][j][k], df_drho[i][j][k], grad[i][j][k],
+								  sub[i][j][k], wa[i][j][k]);
+						fprintf(Wrestart,"%16.12f \n", wa[i][j][k]);
+					}
+				}
+			}
+			fclose(snapshot); fclose(Wrestart);
+			if (myRank != MPIsize - 1) {
+				MPI_Send (sbuf, 1, MPI_INT, myRank + 1, 103, MPI_COMM_WORLD);
+			} else {
+			}
+		}
+	} else {
+	}
+	
+	// free buffers
+	free(rbuf);
+	free(sbuf);
+}
+
+void ReadSubFile () {
+	extern int myRank, MPIsize;
+	
+	MPI_Status status;
+	int *sbuf=NULL, *rbuf=NULL;
+	
+	sbuf = (int*) malloc(sizeof(int));
+	rbuf = (int*) malloc(sizeof(int));
+	
+	sbuf[0] = 0;
+ 
+	if (myRank == 0) {
+		ReadSubFunc();
+		
+		if (MPIsize > 1) {
+			MPI_Send (sbuf, 1, MPI_INT, myRank + 1, 102, MPI_COMM_WORLD);
+		} else {
+			// do not send anything, there is only 1 CPU
+		}
+	} else {
+		MPI_Recv (rbuf, 1, MPI_INT, myRank - 1, 102, MPI_COMM_WORLD, &status);
+
+		ReadSubFunc();
+
+		if (myRank != MPIsize - 1) {
+			MPI_Send (sbuf, 1, MPI_INT, myRank + 1, 102, MPI_COMM_WORLD);
+		} else {
+		}
+	}
+	
+	// free buffers
+	free(rbuf);
+	free(sbuf);
+}
+
+void ReadSubFunc () {
+	extern char name[], foldername[], fullname_iter[], fullname_Wfields[], fullname_Wsub[];
+	extern int iteration_num, globStartIdx;
+	extern double total_N, dz, rho_liq, ***df_drho, ***grad, ***wa, ***sub;
+	
+	extern VecI grid;
+	extern VecR corr;
+
+	FILE *iterkeeper, *Wfields, *Wsub;
+
+	// read iteration number and total number of particles for restart
+	MAKE_FILENAME(fullname_iter,"iteration.dat");
+	iterkeeper = fopen(fullname_iter,"r");
+	fscanf(iterkeeper,"%d %lf\n",&iteration_num, &total_N);
+	fclose(iterkeeper);
+	
+	// read filename of the fields for restart
+	if (iteration_num != 0) {
+		sprintf(name,"Wfields_%d.dat",iteration_num);
+		MAKE_FILENAME(fullname_Wfields,name);
+		Wfields=fopen(fullname_Wfields,"r");
+		printf ("fullname_Wfields is %s\n", fullname_Wfields);
+	}
+	
+	// read substrate potential for restart
+	MAKE_FILENAME(fullname_Wsub,"substrate.dat");
+	Wsub = fopen(fullname_Wsub,"r");
+	
+	// skip some lines because they should be read by another processor
+	int skipLines = 0;
+	double tempBuf = 0.;
+	while (skipLines != globStartIdx*grid.y*grid.z) {
+		if (iteration_num != 0) {
+			fscanf(Wfields,"%lf \n",&tempBuf);
+		}
+		fscanf(Wsub,"%lf \n",&tempBuf);
+		skipLines++;
+	}
+	
+	for(int i = 1; i < grid.x+1; i++){
+		for(int j = 1; j < grid.y+1; j++){
+			for(int k = 1; k < grid.z+1; k++){
+				/* set free energy terms to zero*/
+				SET_TO_ZERO (df_drho,i,j,k);
+				SET_TO_ZERO (grad,i,j,k);
+				
+				/* read in the field and the substrate potential */
+				if (iteration_num == 0) {
+					// create fiels from scratch
+					wa[i][j][k] = 0.;
+					if ((0.5 * dz + (k - 1) * dz) > 2. * corr.z){
+						wa[i][j][k] = V11*rho_liq + W111*SQR(rho_liq);
+						total_N = total_N + 1.;
+					}
+				} else {
+					fscanf(Wfields,"%lf \n",&wa[i][j][k]);
+				}
+				fscanf(Wsub,"%lf \n",&sub[i][j][k]);
+			}
+		}
+	}
+	fclose(Wsub);
+	printf ("Finished with scanning substrate file!\n");
+	printf ("total_N is %10.8f\n", total_N);
+	
+	if (iteration_num != 0) {
+		fclose(Wfields);
+	}
+}
+	
+	
+void BcastConsoleParams () {
+  extern int myRank;
+  
+  extern char path[];
+  extern char folder[];
+  
+  extern int nDims;
+  extern int NVT;
+  extern int filled_init;
+  extern int restart;
+  
+  extern double rho_liq;
+  extern double eps;
+  extern double nMol;
+  extern double lambda;
+  extern double dx, dy, dz, dx2, dy2, dz2, volume;
+  
+  extern VecI grid;
+  extern VecR L;
+  extern VecR corr;
+  
+  int countInt = 4;
+  int countDouble = 11;
+  int countVecI = 3;
+  int countVecR = 6;
+
+//  char *pbuf=NULL, *fbuf=NULL;
+  int *ibuf=NULL, *vecIbuf=NULL;
+  double *dbuf=NULL, *vecRbuf=NULL;
+
+    	if (myRank == 0) {
+//  pbuf = malloc((strlen(path)+1)*sizeof(char));
+//  fbuf = malloc((strlen(folder)+1)*sizeof(char));
+  ibuf = malloc(countInt*sizeof(int));
+  dbuf = malloc(countDouble*sizeof(double));
+  vecIbuf = malloc(countVecI*sizeof(int));
+  vecRbuf = malloc(countVecR*sizeof(double));
+  
+/*	  for (int i = 0; i < strlen(path)+1; i++) {
+		 pbuf[i]=path[i];
+	  }
+	  for (int i = 0; i < strlen(folder)+1; i++) {
+		 fbuf[i]=folder[i];
+	  }
+*/
+		  ibuf[0] = nDims;
+		  ibuf[1] = NVT;
+		  ibuf[2] = filled_init;
+		  ibuf[3] = restart;
+//	  &fbuf = folder;
+//	  printf ("length of path and folder are %d and %d\n", strlen(path), strlen(folder));
+//  /* Find out process rank */
+//  MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+	}
+//  MPI_Bcast(pbuf, strlen(path)+1, MPI_CHAR, 0, MPI_COMM_WORLD);
+//  MPI_Bcast(fbuf, strlen(folder)+1, MPI_CHAR, 0, MPI_COMM_WORLD);
+  MPI_Bcast(ibuf, countInt, MPI_INT, 0, MPI_COMM_WORLD);
+  
+  
+  if (myRank != 0) {
+	 nDims = ibuf[0]; NVT = ibuf[1]; filled_init = ibuf[2]; restart = ibuf[3];
+//  path = &pbuf;
+//	 folder = &fbuf;
+  }
+	 
+//  printf("Hello world, I am process %d and the path is %s folder is %s \n", myRank, path, folder);
 }
