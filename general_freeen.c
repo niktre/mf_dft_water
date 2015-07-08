@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+// cosmetic change from pckr132
 //#include <unistd.h>
 //#include <fcntl.h>
 //#include <sys/types.h>
@@ -289,7 +290,6 @@ int main (int argc, char **argv){
 							break;
 			}
 		}
-
 
 		/* put drop's CoM into the xy-plane's middle and adjust its z-position */
 		switch (filled_init) {
