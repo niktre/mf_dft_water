@@ -415,7 +415,10 @@ int main (int argc, char **argv){
 					}
 				}
 			}
-			CheckConverge (kk);
+
+			if ((int)(kk*10) % TWRITE == 0) {
+				CheckConverge (kk);
+			}
 
 		} else {
 			if (restart == 1) write_snapshot = 0;
@@ -595,7 +598,9 @@ void CalcPartSumQ (int _NVT) {
 	Q = _Q;
 	total_N = _total_N;
 	
-//	printf ("CPU %d: Q is %18.14f and total_N is %18.14f\n", myRank, Q, total_N);
+	// free buffers
+	free(rbuf);
+	free(sbuf);
 	
 //	printf("finished CalcPartSumQ. Value of Q is %8.4f, total_N is %8.4f\n", Q, total_N);
 }
@@ -679,12 +684,8 @@ void CalcFreeEn (int temp_iteration_num, int temp_kk, int _NVT) {
 	double _sum_final = 0.;
 	for (int i = 0; i < MPIsize; i++) {
 		_sum_final += rbuf[i];
-		if (myRank == 0) {
-			printf ("_sum_final is %18.14f\n", rbuf[i]);
-		}
 	}
 	
-	//	printf ("CPU %d: Q is %18.14f and total_N is %18.14f\n", myRank, Q, total_N);
 	if (myRank == 0) {
 		sum_final =  _sum_final + term1;
 
@@ -696,6 +697,10 @@ void CalcFreeEn (int temp_iteration_num, int temp_kk, int _NVT) {
 		
 		fclose(free_energy_out);
 	}
+	
+	// free buffers
+	free(rbuf);
+	free(sbuf);
 }
 
 void DefineSimpson () {
@@ -847,20 +852,26 @@ void CheckConverge (int _kk) {
 	MPI_Gather (sbuf, 2, MPI_DOUBLE, rbuf, 2, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
 	if (myRank == 0) {
+		W2A = tempA = 0.;			// we will start collecting their values from rbuf
 		for (int i = 0; i < MPIsize; i++) {
 			W2A += rbuf[2*i];
 			tempA += rbuf[2*i+1];
 		}
 		
 		convergence = tempA/W2A;
-		printf ("convergence is %8.4f\n", convergence);
+		printf ("convergence is %gf\n", convergence);
 
-		if((int)(_kk*10) % TWRITE == 0){
+//		if((int)(_kk*10) % TWRITE == 0){
 			converge = fopen(fullname_conv,"a");
 			fprintf(converge, "%d %g \n", _kk + iteration_num, convergence);
 			fclose(converge);
-		}
+//		}
+		// free buffers
+		free(rbuf);
 	}
+	
+	// free buffers
+	free(sbuf);
 }
 
 /* Communicate YZ planes between processors */
@@ -954,4 +965,8 @@ void CommHaloYZ () {
 			rho[i][j][k] = rbuf[index];
 		}
 	}
+	
+	// free buffers
+	free(rbuf);
+	free(sbuf);
 }

@@ -264,7 +264,7 @@ void PrintSubFile () {
 
 	sbuf[0] = 0;
   
-	MAKE_FILENAME(fullname_Wsub,"substrate2.dat");
+	MAKE_FILENAME(fullname_Wsub,"substrate.dat");
   
 	if (myRank == 0) {
 		Wsub=fopen(fullname_Wsub,"a");
@@ -314,7 +314,11 @@ void PrintSubFile () {
 		printf ("initialisation and substrate are done in %g seconds\n", seconds);
 	}
 	
+	// free buffers
+	free(rbuf);
+	free(sbuf);
 }
+
 void PrintSnapField (int _id, int _kk) {
 	extern int write_snapshot, myRank, MPIsize, iteration_num, globStartIdx, subGridX;
 	extern char foldername[], fullname_iter[], fullname_profiling[], name[];
@@ -419,6 +423,10 @@ void PrintSnapField (int _id, int _kk) {
 		}
 	} else {
 	}
+	
+	// free buffers
+	free(rbuf);
+	free(sbuf);
 }
 
 void ReadSubFile () {
@@ -450,6 +458,10 @@ void ReadSubFile () {
 		} else {
 		}
 	}
+	
+	// free buffers
+	free(rbuf);
+	free(sbuf);
 }
 
 void ReadSubFunc () {
