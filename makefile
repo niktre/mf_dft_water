@@ -1,8 +1,8 @@
-NAME = gen_2015_03_25.out
+NAME = gen_2015_06_30.out
 
 CLEANNAME = clean
 
-CC = gcc
+CC = /usr/local/bin/mpicc
 LFLAGS = -lm
 
 SOURCE = general_freeen.c reverse.c itoa.c
