@@ -563,6 +563,7 @@ void CalcPartSumQ (int _NVT) {
 			Q = Q + koeff_x_semi[i]*XYa[i]*dx;
 		}
 		total_N = total_N / MPIsize;		// just needed to do this. Re-summation after MPI_Allgather
+		sbuf[1]=total_N;
 	} else {
 		total_N = 0.;
 		
