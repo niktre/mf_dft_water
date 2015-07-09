@@ -10,7 +10,9 @@
 #include "io_interface.c"
 
 #define NDIM 2			// number of dimensions. if == 2, then Ly is is small
-
+#ifndef M_PI
+	#define M_PI 3.14159265358979323846264338327 
+#endif
 typedef struct{
 	VecI rs;
 } substrateNode;
