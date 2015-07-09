@@ -563,7 +563,6 @@ void CalcPartSumQ (int _NVT) {
 			Q = Q + koeff_x_semi[i]*XYa[i]*dx;
 		}
 		total_N = total_N / MPIsize;		// just needed to do this. Re-summation after MPI_Allgather
-		sbuf[1]=total_N;
 	} else {
 		total_N = 0.;
 		
@@ -583,9 +582,9 @@ void CalcPartSumQ (int _NVT) {
 			Q = Q + koeff_x_semi[i]*XYa[i]*dx;
 			total_N = total_N + koeff_x_semi[i]*XYat[i]*dx;
 		}
-		sbuf[1]=total_N;
 	}
 	sbuf[0]=Q;
+	sbuf[1]=total_N;
 	
 	rbuf = (double*) malloc(MPIsize*2*sizeof(double));
 	
@@ -753,12 +752,23 @@ void DefineSimpson () {
 	koeff_y_semi[2] = 7./6.;
 	koeff_y_semi[3] = 23./24.;
 	
+#warning: error handling if number of nodes in a processor less than 3!
 	if (myRank == MPIsize - 1) {
 		koeff_x_semi[grid.x-2] = 55./24.;
 		koeff_x_semi[grid.x-1] = -1./6.;
 		koeff_x_semi[grid.x]	= 11./8.;
-	} else {
+	} else if (myRank > 0) {
 		koeff_x_semi[grid.x-2] = koeff_x_semi[grid.x-1] = koeff_x_semi[grid.x] = 1.;
+	} else if (myRank == 0) {
+		for (i = grid.x-2; i <= grid.x; i++) {
+			if (i > 3) {
+				koeff_x_semi[i] = 1.;
+			} else {
+				// do nothing
+			}
+		}
+	} else {
+		// do nothing
 	}
 	
 	koeff_y_semi[grid.y-2]	= 55./24.;
