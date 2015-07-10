@@ -270,20 +270,53 @@ int main (int argc, char **argv){
 		printf ("Creating substrate nodes and liquid field\n");
 		printf ("corr.z is %8.4f\n", corr.z);
 		
+		int myLeftIdX, myRightIdX;
+		int myLeftIdY, myRightIdY;
+		
+		int myRepBorder[4];
+		myRepBorder[0] = (int)((nRep.x-1) / 2) * subGridX + globStartIdx + 1 - (int) (rCut / dx);
+		myRepBorder[1] = (int)((nRep.x-1) / 2) * subGridX + globStartIdx + grid.x + (int) (rCut / dx);
+		myRepBorder[2] = (int)((nRep.y-1) / 2) * grid.y + 1 - (int) (rCut / dy);
+		myRepBorder[3] = (int)((nRep.y-1) / 2) * grid.y + grid.y + (int) (rCut / dy);
+		
+//		myRepSubLeftLeftIdX = (int)((nRep.x-1) / 2) * subGridX + globStartIdx + 1;
+//		myRightIdX = myLeftIdX + grid.x - 1;
+//		myLeftIdY = (int)((nRep.y-1) / 2) * grid.y;
+//		myRightIdY = myLeftIdY + grid.y;
+//		double distLeftX2, distRightX2, distLeftY2, distRightY2;
+		
+//		printf ("CPU %d: myLeftIdX is %d, myRightIdX is %d, myLeftIdY is %d, myRightIdY is %d\n",
+//				  myRank, myLeftIdX, myRightIdX, myLeftIdY, myRightIdY);
+		printf ("CPU %d: myRepBorder[0] is %d, myRepBorder[1] is %d, myRepBorder[2] is %d, myRepBorder[3] is %d\n",
+				  myRank, myRepBorder[0], myRepBorder[1], myRepBorder[2], myRepBorder[3]);
 		// create corrugation sites (inkl. replicas of the parent cell)
-		for (i1 = 1; i1 < nRep.x * subGridX + 1; i1++){
-			for (j1 = 1; j1 < nRep.y * grid.y + 1; j1++){
-				for (k1 = 1; k1 < grid.z+1; k1++){
-					/* create substrate nodes taking into account corrugation */
-					if ( (((i1 - 1) % subGridX) * dx < corr.x) &&
-										 (((j1 - 1) % grid.y) * dy < corr.y) && 
-										 ((k1 - .5)*dz < corr.z) ) {
-						V_SET(subNode[nSub].rs, i1, j1, k1);
-						++nSub;
-					} else {
+		for (i1 = myRepBorder[0]; i1 < myRepBorder[1] + 1; i1++){
+//			distLeftX2 = SQR(myLeftIdX - i1)*dx2;
+//			distRightX2 = SQR(i1 - myRightIdX)*dx2;
+//			if (myLeftIdX - i1 < subDepth || i1 - myRightIdX < subDepth) {
+				for (j1 = myRepBorder[2]; j1 < myRepBorder[3] + 1; j1++){
+//					distLeftY2 = SQR(myLeftIdY - j1)*dx2;
+//					distRightY2 = SQR(j1 - myRightIdY)*dx2;
+//					if (myLeftIdY - j1 < subDepth || j1 - myRightIdY < subDepth) {
+					for (k1 = 1; k1 < grid.z+1; k1++){
+//						dist2.y = SQR(j1 - mySubCenY);
+						/* create substrate nodes taking into account corrugation */
+						if ((((i1 - 1) % subGridX) * dx < corr.x) &&
+							 (((j1 - 1) % grid.y) * dy < corr.y) &&
+							 ((k1 - .5)*dz < corr.z)) {
+//						}&&
+//							 distLeftX2 < rrCut && distRightX2 < rrCut &&
+//							 distLeftY2 < rrCut && distRightY2 < rrCut
+//							 ) {
+							
+							V_SET(subNode[nSub].rs, i1, j1, k1);
+							++nSub;
+						} else {
+						}
 					}
+//					}
 				}
-			}
+//			}
 		}
 		
 		/* create spherical (nDims == 3) or cylindrical droplet (nDims == 2) */
@@ -387,6 +420,7 @@ int main (int argc, char **argv){
 						// if inside a corrugation, set large potential:
 						sub[i1][j1][k1] =	maxSubPot;
 					} else if (k1 >= subDepth) {
+#warning: kill else if by putting k1 < MIN(subDepth + corr.z + 1, grid.z+1) into the for loop
 					} else {
 						// if the node is accesible to fluid, calculate sub.potential there
 						for(sn = 0; sn < nSub; sn++){
