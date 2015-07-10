@@ -208,28 +208,44 @@ int main (int argc, char **argv){
 	
 	printf ("Finished substrate' allocation\n");
 	
+	int mySubCenX, mySubCenY;
+	mySubCenX = ((int) ((nRep.x - 1) / 2) + 0.5) * subGridX + 1;
+	mySubCenY = ((int) ((nRep.y - 1) / 2) + 0.5) * grid.y + 1;
 	if (restart == 0) {
 		/* set up the flat substrate */
-		for (i1 = 1; i1 < nRep.x * subGridX + 1; i1++){
-			for (j1 = 1; j1 < nRep.y * grid.y + 1; j1++){
-				// create "0"th substrate plane
-				V_SET(subNode[nSub].rs, i1, j1, 0);
-				++nSub;
+		for (i1 = 1; i1 < nRep.x * subGridX + 1; i1++) {
+			for (j1 = 1; j1 < nRep.y * grid.y + 1; j1++) {
+				// create "0"th substrate plane with cutoff as a side
+				dist2.x = SQR(i1 - mySubCenX);
+				dist2.y = SQR(j1 - mySubCenY);
+				distance2 = dist2.x * dx2 + dist2.y * dy2;
+				if (distance2 < rrCut) {
+					V_SET(subNode[nSub].rs, i1, j1, 0);
+					++nSub;
+				}
 			}
 		}
 		printf ("set up the flat substrate\n");
-	
+		char fullname_node[120];
+		FILE *nodeSub;
+		if (myRank == 0) {
+			MAKE_FILENAME(fullname_node, "nodeSub.dat");
+			nodeSub = fopen(fullname_node,"a");
+		}
 		/* calculate z-dependence of the potential created by a flat substrate */
 		for (k1 = 1; k1 < grid.z+1; k1++){
 			for(sn = 0; sn < nSub; sn++){
-				dist2.x = SQR(subNode[sn].rs.x - ((int) ((nRep.x - 1) / 2) + 0.5) * subGridX - 1);
-				dist2.y = SQR(subNode[sn].rs.y - ((int) ((nRep.y - 1) / 2) + 0.5) * grid.y - 1);
+				dist2.x = SQR(subNode[sn].rs.x - mySubCenX);
+				dist2.y = SQR(subNode[sn].rs.y - mySubCenY);
 			
 				/* take into account the "0"th plane and the planes up to rCut beneath */
 				for (ks = 0; ks < subDepth; ks++){
 					dist2.z = SQR(ks + k1);
 					distance2 = dist2.x * dx2 + dist2.y * dy2 + dist2.z * dz2;
 					if (distance2 < rrCut) {
+						if (myRank == 0) {
+							fprintf (nodeSub, "i is %8d, j is %8d, ks is %8d, k1 is %8d\n", subNode[sn].rs.x, subNode[sn].rs.y, ks, k1);
+						}
 						ri2 = sigma_sub2/distance2;
 						ri6 = CUBE(ri2);
 						subPotZ[k1] +=	ri6 * (ri6 - 1.);
@@ -238,6 +254,9 @@ int main (int argc, char **argv){
 			}
 			maxSubPot = MAX(maxSubPot, subPotZ[k1]);
 			/* in the end we have one dimensional (w.r.t. z) potential */
+		}
+		if (myRank==0) {
+			fclose(nodeSub);
 		}
 		printf ("Made the 0th substrate layer. It has %d nodes\n", nSub);
 	
@@ -337,6 +356,7 @@ int main (int argc, char **argv){
 							}
 						} else {
 						// if initial liquid state is the filled one
+#warning: change in the next line corr.x to subGridX
 							if ( (i1 - 1) * dx < corr.x && (j1 - 1) * dy < corr.y && (k1 - 0.5) * dz < corr.z ) {
 							} else {
 								wa[i1][j1][k1] = V11*rho_liq + W111*SQR(rho_liq);
@@ -760,6 +780,7 @@ void DefineSimpson () {
 	} else if (myRank > 0) {
 		koeff_x_semi[grid.x-2] = koeff_x_semi[grid.x-1] = koeff_x_semi[grid.x] = 1.;
 	} else if (myRank == 0) {
+#warning: globStartIdx may help to kill one of else if and release the limitation of min 3 nodes per CPU
 		for (i = grid.x-2; i <= grid.x; i++) {
 			if (i > 3) {
 				koeff_x_semi[i] = 1.;
@@ -824,7 +845,12 @@ void AllocArrays () {
 }
 
 void AllocSubstrate () {
-	ALLOC_MEM (subNode, (int)(nRep.x * subGridX * nRep.y * grid.y * ((int)(corr.z / dz) + 1)), substrateNode);
+	int maxSubAtNum, corrAt, bulkSubAt;
+//	maxSubAtNum = MAX((int)(nRep.x * subGridX * nRep.y * grid.y * ((int)(corr.z / dz) + 1)), );
+	corrAt = (int)(nRep.x * nRep.y * ((int)(corr.x / dx) + 1) * ((int)(corr.y / dy) + 1) * ((int)(corr.z / dz) + 1));
+	bulkSubAt = (int)(SQR(2. * rCut) / (dx * dy));
+	maxSubAtNum = MAX(corrAt, bulkSubAt);
+	ALLOC_MEM (subNode, maxSubAtNum, substrateNode);
 }
 
 void DivideSpace () {
