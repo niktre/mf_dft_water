@@ -226,13 +226,13 @@ int main (int argc, char **argv){
 			}
 		}
 		printf ("set up the flat substrate\n");
-		char fullname_node[120];
+/*		char fullname_node[120];
 		FILE *nodeSub;
 		if (myRank == 0) {
 			MAKE_FILENAME(fullname_node, "nodeSub.dat");
 			nodeSub = fopen(fullname_node,"a");
 		}
-		/* calculate z-dependence of the potential created by a flat substrate */
+*/		/* calculate z-dependence of the potential created by a flat substrate */
 		for (k1 = 1; k1 < grid.z+1; k1++){
 			for(sn = 0; sn < nSub; sn++){
 				dist2.x = SQR(subNode[sn].rs.x - mySubCenX);
@@ -243,10 +243,10 @@ int main (int argc, char **argv){
 					dist2.z = SQR(ks + k1);
 					distance2 = dist2.x * dx2 + dist2.y * dy2 + dist2.z * dz2;
 					if (distance2 < rrCut) {
-						if (myRank == 0) {
+/*						if (myRank == 0) {
 							fprintf (nodeSub, "i is %8d, j is %8d, ks is %8d, k1 is %8d\n", subNode[sn].rs.x, subNode[sn].rs.y, ks, k1);
 						}
-						ri2 = sigma_sub2/distance2;
+*/						ri2 = sigma_sub2/distance2;
 						ri6 = CUBE(ri2);
 						subPotZ[k1] +=	ri6 * (ri6 - 1.);
 					}
@@ -255,10 +255,10 @@ int main (int argc, char **argv){
 			maxSubPot = MAX(maxSubPot, subPotZ[k1]);
 			/* in the end we have one dimensional (w.r.t. z) potential */
 		}
-		if (myRank==0) {
+/*		if (myRank==0) {
 			fclose(nodeSub);
 		}
-		printf ("Made the 0th substrate layer. It has %d nodes\n", nSub);
+*/		printf ("Made the 0th substrate layer. It has %d nodes\n", nSub);
 	
 		/* creation of corrugation nodes (if any) initial fields */
 		nSub = 0;	// now it count only corrugation nodes
