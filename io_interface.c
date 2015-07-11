@@ -399,6 +399,23 @@ void PrintSnapField (int _id, int _kk) {
 				// do not send anything, there is only 1 CPU
 			}
 			
+			/* remove old snapshots and Wfields */
+			int remove_status, fileNumToDelete;
+			char fileToDel[120];
+			fileNumToDelete = _kk + iteration_num - 2 * TWRITE;
+			if (fileNumToDelete > 0 && fileNumToDelete != iteration_num) {
+				// make filename to delete the file
+				sprintf(name,"Wfields_%d.dat",fileNumToDelete);
+				MAKE_FILENAME(fileToDel,name);
+				remove_status = remove(fileToDel);
+				
+				sprintf(name,"snapshot_%d.dat",fileNumToDelete);
+				MAKE_FILENAME(fileToDel,name);
+				remove_status = remove(fileToDel);
+			} else {
+				// do nothing
+			}
+			
 		} else {
 			MPI_Recv (rbuf, 1, MPI_INT, myRank - 1, 103, MPI_COMM_WORLD, &status);
 			// saves the snapshot (the rest) and fields for future restart

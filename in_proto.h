@@ -8,6 +8,8 @@ void CalcPartSumQ (int);
 
 void CheckConverge (int);
 
+void CheckSuccess (double, double, double);
+
 void DefineSimpson (void);
 
 void DivideSpace (void);
