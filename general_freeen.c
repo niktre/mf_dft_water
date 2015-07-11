@@ -888,12 +888,13 @@ void AllocArrays () {
 }
 
 void AllocSubstrate () {
-	int maxSubAtNum, corrAt, bulkSubAt, maxDimY;
-	corrAt = (corr.x + (int)(2 * rCut / dx) + 1) * (corr.y + (int)(2 * rCut / dy) + 1) * ((int)(corr.z / dz) + 1);
+	int maxSubAtNum, corrAt, bulkSubAt;
+	corrAt = ((int)((2 * rCut + corr.x) / dx) + 1) * ((int)((2 * rCut + corr.y) / dy) + 1) * ((int)(corr.z / dz) + 1);
 //	corrAt = (int)(nRep.x * nRep.y * ((int)(corr.x / dx) + 1) * ((int)(corr.y / dy) + 1) * ((int)(corr.z / dz) + 1)); // too much?
 	bulkSubAt = (int)((2. * rCut / dx  + 1) * (2. * rCut / dy  + 1));
 	maxSubAtNum = MAX(corrAt, bulkSubAt);
 	ALLOC_MEM (subNode, maxSubAtNum, substrateNode);
+	printf("Allocated %d substrate nodes\n", maxSubAtNum);
 }
 
 void DivideSpace () {
