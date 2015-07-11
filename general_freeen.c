@@ -75,6 +75,8 @@ double eps;								// amplitude of the potential
 /* statistical properties of the ensemble */
 double total_N;						// total number of molecules in the system
 double Q;								// statistical sum
+double _lastQ[2], _lastSumFinal[2], _lastTotalN[2];	// quantities to check the success (convergence) of the program
+
 
 /* time variables for simple profiling */
 time_t begin, end;					// two marks of the time-measurement
@@ -165,6 +167,11 @@ int main (int argc, char **argv){
 
 	strcpy (foldername, path);
 	strcat (foldername, folder);
+	
+	/* success (convergence criteria) variables */
+	for (int i=0; i < 2; i++) {
+		_lastQ[i] = _lastSumFinal[i] = _lastTotalN[i]=0.;
+	}
 	
 	if (myRank == 0) {
 		InitParameters ();				// read parameters from input line
@@ -404,7 +411,7 @@ int main (int argc, char **argv){
 		total_N = total_N * rho_liq * dx * dy * dz;
 		printf ("total_N is %8.4f\n", total_N);
 		
-		printf ("Made the corrugations. Now the substrate has %d nodes\n", nSub);
+		printf ("CPU %d: Made the corrugations. Now the substrate has %d nodes\n", myRank, nSub);
 
 		VecI currNode;
 		V_ZERO (currNode);
@@ -736,16 +743,15 @@ void CalcFreeEn (int temp_iteration_num, int temp_kk, int _NVT) {
 	
 	rbuf = (double*) malloc(MPIsize*sizeof(double));
 	
-	MPI_Gather (sbuf, 1, MPI_DOUBLE, rbuf, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	MPI_Allgather (sbuf, 1, MPI_DOUBLE, rbuf, 1, MPI_DOUBLE, MPI_COMM_WORLD);
 	
 	double _sum_final = 0.;
 	for (int i = 0; i < MPIsize; i++) {
 		_sum_final += rbuf[i];
 	}
+	sum_final =  _sum_final + term1;
 	
 	if (myRank == 0) {
-		sum_final =  _sum_final + term1;
-
 		/* print into the file */
 		fprintf(free_energy_out,"%d %10.8f %10.8f %10.8f\n", temp_kk, Q, sum_final * kbT, total_N);
 		
@@ -754,6 +760,9 @@ void CalcFreeEn (int temp_iteration_num, int temp_kk, int _NVT) {
 		
 		fclose(free_energy_out);
 	}
+
+	/* check if the calc converged and if so, exit (to save disk space) */
+	CheckSuccess (Q, sum_final, total_N);
 	
 	// free buffers
 	free(rbuf);
@@ -879,10 +888,10 @@ void AllocArrays () {
 }
 
 void AllocSubstrate () {
-	int maxSubAtNum, corrAt, bulkSubAt;
-//	maxSubAtNum = MAX((int)(nRep.x * subGridX * nRep.y * grid.y * ((int)(corr.z / dz) + 1)), );
-	corrAt = (int)(nRep.x * nRep.y * ((int)(corr.x / dx) + 1) * ((int)(corr.y / dy) + 1) * ((int)(corr.z / dz) + 1));
-	bulkSubAt = (int)(SQR(2. * rCut) / (dx * dy));
+	int maxSubAtNum, corrAt, bulkSubAt, maxDimY;
+	corrAt = (corr.x + (int)(2 * rCut / dx) + 1) * (corr.y + (int)(2 * rCut / dy) + 1) * ((int)(corr.z / dz) + 1);
+//	corrAt = (int)(nRep.x * nRep.y * ((int)(corr.x / dx) + 1) * ((int)(corr.y / dy) + 1) * ((int)(corr.z / dz) + 1)); // too much?
+	bulkSubAt = (int)((2. * rCut / dx  + 1) * (2. * rCut / dy  + 1));
 	maxSubAtNum = MAX(corrAt, bulkSubAt);
 	ALLOC_MEM (subNode, maxSubAtNum, substrateNode);
 }
@@ -933,19 +942,37 @@ void CheckConverge (int _kk) {
 		}
 		
 		convergence = tempA/W2A;
-		printf ("convergence is %gf\n", convergence);
+		printf ("convergence is %g\n", convergence);
 
-//		if((int)(_kk*10) % TWRITE == 0){
-			converge = fopen(fullname_conv,"a");
-			fprintf(converge, "%d %g \n", _kk + iteration_num, convergence);
-			fclose(converge);
-//		}
-		// free buffers
-		free(rbuf);
+		converge = fopen(fullname_conv,"a");
+		fprintf(converge, "%d %g \n", _kk + iteration_num, convergence);
+		fclose(converge);
+
+		free(rbuf);			// free buffer
 	}
+	free(sbuf);				// free buffer
+}
+
+void CheckSuccess (double _Q, double _sum_final, double _total_N) {
+	double tolerance = 0.00000001;
 	
-	// free buffers
-	free(sbuf);
+	if (fabs(_lastQ[0] - _Q) < tolerance &&
+		 fabs(_lastQ[1] - _Q) < tolerance &&
+		 fabs(_lastSumFinal[0] - _sum_final * kbT) < tolerance &&
+		 fabs(_lastSumFinal[1] - _sum_final * kbT) < tolerance &&
+		 fabs(_lastTotalN[0] - _total_N) < tolerance &&
+		 fabs(_lastTotalN[1] - _total_N) < tolerance) {
+		/* Shut down MPI */
+		MPI_Finalize();
+		exit(EXIT_SUCCESS);
+	} else {
+		_lastQ[0] = _lastQ[1];
+		_lastSumFinal[0] = _lastSumFinal[1];
+		_lastTotalN[0] = _lastTotalN[1];
+		_lastQ[1] = _Q;
+		_lastSumFinal[1] = _sum_final * kbT;
+		_lastTotalN[1] = _total_N;
+	}
 }
 
 /* Communicate YZ planes between processors */
