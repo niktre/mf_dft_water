@@ -1,4 +1,6 @@
 .DS_Store
 *.xcuserdatad
 mf_code/**
+old_code/**
+old_submit/**
 makefile
