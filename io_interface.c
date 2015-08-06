@@ -403,7 +403,9 @@ void PrintSnapField (int _id, int _kk) {
 			int remove_status, fileNumToDelete;
 			char fileToDel[120];
 			fileNumToDelete = _kk + iteration_num - 2 * TWRITE;
-			if (fileNumToDelete > 0 && fileNumToDelete != iteration_num) {
+			if (fileNumToDelete > 0 && 								// not a zero iteration
+				fileNumToDelete != iteration_num && 				// not a restart point
+				fileNumToDelete != iteration_num - TWRITE) {		// not directly before the restart
 				// make filename to delete the file
 				sprintf(name,"Wfields_%d.dat",fileNumToDelete);
 				MAKE_FILENAME(fileToDel,name);
