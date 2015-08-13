@@ -14,6 +14,7 @@ char fullname_snap[120];
 char fullname_stress[120];
 char fullname_Wfields[120];
 char fullname_Wsub[120];
+char fullname_diff[120];
 
 #define	V11			-1.086641506142464
 #define	W111		0.023102120829070
@@ -34,8 +35,8 @@ double ***rho;
 double ***df_drho;
 double ***grad;
 
-double ***p0;
-double ***Wab;
+//double ***p0;
+double ***divSigma;
 double ***sigmaXZ, ***sigmaYZ, ***sigmaZZ;
 double ***fZ;
 
@@ -50,8 +51,16 @@ int main (int argc, char **argv){
 	AllocArrays ();
 	
 	ReadSubFunc ();
+
+	//	PrintSubFile ();
 	
-	PrintSubFile ();
+	CalcForceZ ();
+	
+	CalcSigmas ();
+	
+	CalcDivSigma ();
+	
+	PrintDiff ();
 }
 
 /*******************************************************************************************/
@@ -66,7 +75,7 @@ void PassConsoleParams (int argc, char **argv) {
 			strcpy(path,"/data/isilon/tretyakov/mf_lb/");
 		} else if (strcmp(argv[argz], "mbpr") == 0) {
 			strcpy(path,"/Users/niktre/simulation/60_mf_lb_sh/");
-			printf("path is %s\n", path);
+//			printf("path is %s\n", path);
 		} else {
 			printf ("Error! Unknown system specification!\n");
 		}
@@ -112,12 +121,12 @@ void ReadSubFunc () {
 	sprintf(name,"snapshot_final.dat");
 	MAKE_FILENAME(fullname_snap,name);
 	snap=fopen(fullname_snap,"r");
-	printf ("fullname_snap is %s\n", fullname_snap);
+//	printf ("fullname_snap is %s\n", fullname_snap);
 
 	// skip first 10 words (header of tecplot)
 	for (int i=0; i<10; i++) {
 		fscanf (snap, "%s", str);
-		printf ("%s\n", str);
+//		printf ("%s\n", str);
 	}
 
 	for(int i = 1; i < grid.x+1; i++){
@@ -129,14 +138,15 @@ void ReadSubFunc () {
 			}
 		}
 	}
-	
+
 	fclose(snap);
+	printf("finished snapshot reading\n");
 
 	// read filename of the fields for restart
 	sprintf(name,"Wfields_final.dat");
 	MAKE_FILENAME(fullname_Wfields,name);
 	Wfields=fopen(fullname_Wfields,"r");
-	printf ("fullname_Wfields is %s\n", fullname_Wfields);
+//	printf ("fullname_Wfields is %s\n", fullname_Wfields);
 
 	for(int i = 1; i < grid.x+1; i++){
 		for(int j = 1; j < grid.y+1; j++){
@@ -147,6 +157,7 @@ void ReadSubFunc () {
 		}
 	}
 	fclose(Wfields);
+	printf("finished Wfields reading\n");
 	
 	// read substrate potential for restart
 	MAKE_FILENAME(fullname_Wsub,"substrate.dat");
@@ -161,8 +172,9 @@ void ReadSubFunc () {
 		}
 	}
 	fclose(Wsub);
+	printf("finished substrate reading\n");
 	
-	// "periodic" boundaries //
+	// fill in array borders through periodic boundaries //
 	// x-direction
 	for(int k = 1; k < grid.z+1; k++){
 		for(int j = 1; j < grid.y+1; j++){
@@ -205,7 +217,7 @@ void PrintSubFile () {
 			}
 		}
 	}
-	fclose(Wsub);
+	fclose(snap);
 	
 	MAKE_FILENAME(fullname_Wsub,"substrate2.dat");
 	
@@ -234,6 +246,90 @@ void PrintSubFile () {
 
 /*******************************************************************************************/
 
+void CalcForceZ () {
+	double invDZ = .5 / dz;
+	for(int i = 1; i < grid.x+1; i++){
+		for(int j = 1; j < grid.y+1; j++){
+			for(int k = 1; k < grid.z; k++){
+//				printf("for k-1 = %d and k+1 = %d \n", k-1, k+1);
+				fZ[i][j][k] = - rho[i][j][k] * (sub[i][j][k+1] - sub[i][j][k-1]) * invDZ;
+			}
+		}
+	}
+	printf("calculated fZ\n");
+}
+
+void CalcSigmas () {
+	double invDX = .5 / dx;
+	double invDY = .5 / dy;
+	double invDZ = .5 / dz;
+	double p0;
+	double grad2rho;
+	double gradrho2;
+	double WabSec;
+	for(int i = 1; i < grid.x; i++){
+		for(int j = 1; j < grid.y; j++){
+			for(int k = 1; k < grid.z; k++){
+				grad2rho = (rho[i+1][j][k] - 2. * rho[i][j][k] + rho[i-1][j][k]) * 4. * SQR(invDX) +
+									 (rho[i][j+1][k] - 2. * rho[i][j][k] + rho[i][j-1][k]) * 4. * SQR(invDY) +
+									 (rho[i][j][k+1] - 2. * rho[i][j][k] + rho[i][j][k-1]) * 4. * SQR(invDZ);
+				gradrho2 = SQR((rho[i+1][j][k] - rho[i-1][j][k]) * invDX) +
+									 SQR((rho[i][j+1][k] - rho[i][j-1][k]) * invDY) +
+									 SQR((rho[i][j][k+1] - rho[i][j][k-1]) * invDZ);
+				WabSec = KAPPA * (rho[i][j][k] * grad2rho + .5 * gradrho2);
+				sigmaXZ[i][j][k] = KAPPA * (rho[i+1][j][k] - rho[i-1][j][k]) * invDX * (rho[i][j][k+1] - rho[i][j][k-1]) * invDZ - WabSec;
+
+				sigmaYZ[i][j][k] = KAPPA * (rho[i][j+1][k] - rho[i][j-1][k]) * invDY * (rho[i][j][k+1] - rho[i][j][k-1]) * invDZ - WabSec;
+				
+				sigmaZZ[i][j][k] = KAPPA * (rho[i][j][k+1] - rho[i][j][k-1]) * invDZ * (rho[i][j][k+1] - rho[i][j][k-1]) * invDZ - WabSec;
+
+				p0 = - 0.5 * V11 * SQR(rho[i][j][k]) - W111 * CUBE(rho[i][j][k]) / 3. +
+						 rho[i][j][k] * (1 + wa[i][j][k] - sub[i][j][k]);
+				sigmaZZ[i][j][k] += p0;
+			}
+		}
+	}
+	printf("calculated sigmaXZ, sigmaYZ and sigmaZZ\n");
+}
+
+
+void CalcDivSigma () {
+	double invDX = .5 / dx;
+	double invDY = .5 / dy;
+	double invDZ = .5 / dz;
+	for(int i = 2; i < grid.x-1; i++){
+		for(int j = 2; j < grid.y-1; j++){
+			for(int k = 2; k < grid.z-1; k++){
+				divSigma[i][j][k] = (sigmaXZ[i+1][j][k] - sigmaXZ[i-1][j][k]) * invDX +
+														(sigmaYZ[i][j+1][k] - sigmaYZ[i][j-1][k]) * invDY +
+														(sigmaZZ[i][j][k+1] - sigmaZZ[i][j][k-1]) * invDZ;
+			}
+		}
+	}
+	printf("calculated divergence of sigma\n");
+}
+
+void PrintDiff () {
+	FILE *diff;
+	
+	MAKE_FILENAME(fullname_diff,"difference.dat");
+	
+	diff=fopen(fullname_diff,"a");
+	for (int i = 2; i < grid.x-1; i++){
+		for (int j = 2; j < grid.y-1; j++){
+			for (int k = 2; k < grid.z-1; k++){
+				fprintf(diff,"%g %g %g %g %g %g\n",
+//								(i - 0.5)*dx, (j - 0.5)*dy, (k - 0.5)*dz,
+								(i)*dx, (j)*dy, (k)*dz,
+								divSigma[i][j][k], fZ[i][j][k], divSigma[i][j][k] - fZ[i][j][k]);
+			}
+		}
+	}
+	fclose(diff);
+	printf("finished output. Thank you very much!\n");
+}
+/*******************************************************************************************/
+
 void AllocArrays () {
 	ALLOC_MEM (koeff_x_semi, grid.x+1, double);
 	ALLOC_MEM (koeff_y_semi, grid.y+1, double);
@@ -251,9 +347,8 @@ void AllocArrays () {
 	ALLOC_MEM3 (df_drho, grid.x+1, grid.y+1, grid.z+1, double);
 	ALLOC_MEM3 (grad, grid.x+1, grid.y+1, grid.z+1, double);
 	
-	ALLOC_MEM3 (Wab, grid.x+1, grid.y+1, grid.z+1, double);
+	ALLOC_MEM3 (divSigma, grid.x+1, grid.y+1, grid.z+1, double);
 	ALLOC_MEM3 (fZ, grid.x+1, grid.y+1, grid.z+1, double);
-	ALLOC_MEM3 (p0, grid.x+1, grid.y+1, grid.z+1, double);
 	
 	ALLOC_MEM3 (sigmaXZ, grid.x+1, grid.y+1, grid.z+1, double);
 	ALLOC_MEM3 (sigmaYZ, grid.x+1, grid.y+1, grid.z+1, double);

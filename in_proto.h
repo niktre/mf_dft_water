@@ -28,3 +28,9 @@ void CommHaloYZ (void);
 void ReadSubFile (void);
 void ReadSubFunc (void);
 void PrintSubFile (void);
+
+/* STRESS TENSOR FUNCTIONS */
+void CalcForceZ (void);
+void CalcSigmas (void);
+void CalcDivSigma (void);
+void PrintDiff (void);
