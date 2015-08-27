@@ -314,9 +314,11 @@ void PrintDiff () {
 
 	FILE *diff;
 	
-	MAKE_FILENAME(fullname_diff,"difference.dat");
+	MAKE_FILENAME(fullname_diff,"microFB.dat");
 	
 	diff=fopen(fullname_diff,"a");
+	fprintf(diff,"VARIABLES = \"X\", \"Y\", \"Z\",\"sigmaXZ\",\"sigmaYZ\",\"sigmaZZ\",\"divSigma\",\"denForce\",\"diff\",\n");
+	fprintf(diff,"ZONE I=%d, J=%d, K=%d, F=POINT\n", grid.x - 3, grid.y - 3, grid.z - 3);
 	for (int i = 2; i < grid.x-1; i++){
 		for (int j = 2; j < grid.y-1; j++){
 			for (int k = 2; k < grid.z-1; k++){
