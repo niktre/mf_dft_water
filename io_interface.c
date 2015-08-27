@@ -402,7 +402,7 @@ void PrintSnapField (int _id, int _kk) {
 			/* remove old snapshots and Wfields */
 			int remove_status, fileNumToDelete;
 			char fileToDel[120];
-			fileNumToDelete = _kk + iteration_num - 2 * TWRITE;
+			fileNumToDelete = _kk + iteration_num - 3 * TWRITE;
 			if (fileNumToDelete > 0 && 								// not a zero iteration
 				fileNumToDelete != iteration_num && 				// not a restart point
 				fileNumToDelete != iteration_num - TWRITE) {		// not directly before the restart

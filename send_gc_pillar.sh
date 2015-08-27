@@ -11,4 +11,4 @@ lambda=$4
 restart=$5
 nDims="2"
 NVT="0"
-qsub -v den=${den},eps=${eps},lambda=${lambda},restart=${restart},Lx=${Lx},Ly=${Ly},Lz=${Lz},Cx=${Cx},Cy=${Cy},Cz=${Cz},nDims=${nDims},NVT=${NVT} submit_gc_pillar_MPI.sh
+qsub -v den=${den},eps=${eps},lambda=${lambda},restart=${restart},Lx=${Lx},Ly=${Ly},Lz=${Lz},Cx=${Cx},Cy=${Cy},Cz=${Cz},nDims=${nDims},NVT=${NVT} -N p${eps}L${Lx} submit_gc_pillar_MPI.sh
