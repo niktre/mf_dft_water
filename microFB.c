@@ -45,6 +45,8 @@ double dx = 0.1;
 double dy = 0.1;
 double dz = 0.1;						// size of the grid cell
 
+int offset = 2;
+
 int main (int argc, char **argv){
 	PassConsoleParams (argc, argv);
 	
@@ -243,11 +245,13 @@ void PrintSubFile () {
 /*******************************************************************************************/
 
 void CalcForceZ () {
-	double invDZ = .5 / dz;
-	for(int i = 1; i < grid.x+1; i++){
-		for(int j = 1; j < grid.y+1; j++){
-			for(int k = 1; k < grid.z; k++){
-				fZ[i][j][k] = - rho[i][j][k] * (sub[i][j][k+1] - sub[i][j][k-1]) * invDZ;
+	double invDZ = 1. / (12. * dz);
+	double derSubZ;
+	for(int i = offset; i < grid.x+1 - offset; i++){
+		for(int j = offset; j < grid.y+1 - offset; j++){
+			for(int k = offset; k < grid.z+1 - offset; k++){
+				derSubZ = (-sub[i][j][k+2] + 8.*sub[i][j][k+1] - 8.*sub[i][j][k-1] + sub[i][j][k-2]) * invDZ;
+				fZ[i][j][k] = - rho[i][j][k] * derSubZ;
 			}
 		}
 	}
@@ -257,31 +261,35 @@ void CalcForceZ () {
 /*******************************************************************************************/
 
 void CalcSigmas () {
-	double invDX = .5 / dx;
-	double invDY = .5 / dy;
-	double invDZ = .5 / dz;
+	double invDX = 1. / (12. * dx);
+	double invDY = 1. / (12. * dy);
+	double invDZ = 1. / (12. * dz);
 	double p0;
 	double grad2rho;
 	double gradrho2;
 	double WabSec;
-	for(int i = 1; i < grid.x; i++){
-		for(int j = 1; j < grid.y; j++){
-			for(int k = 1; k < grid.z; k++){
-				grad2rho = (rho[i+1][j][k] - 2. * rho[i][j][k] + rho[i-1][j][k]) * 4. * SQR(invDX) +
-									 (rho[i][j+1][k] - 2. * rho[i][j][k] + rho[i][j-1][k]) * 4. * SQR(invDY) +
-									 (rho[i][j][k+1] - 2. * rho[i][j][k] + rho[i][j][k-1]) * 4. * SQR(invDZ);
-				gradrho2 = SQR((rho[i+1][j][k] - rho[i-1][j][k]) * invDX) +
-									 SQR((rho[i][j+1][k] - rho[i][j-1][k]) * invDY) +
-									 SQR((rho[i][j][k+1] - rho[i][j][k-1]) * invDZ);
-				WabSec = KAPPA * (rho[i][j][k] * grad2rho + .5 * gradrho2);
-				sigmaXZ[i][j][k] = KAPPA * (rho[i+1][j][k] - rho[i-1][j][k]) * invDX * (rho[i][j][k+1] - rho[i][j][k-1]) * invDZ - WabSec;
+	double derRhoX, derRhoY, derRhoZ;
+	for(int i = offset; i < grid.x+1 - offset; i++){
+		for(int j = offset; j < grid.y+1 - offset; j++){
+			for(int k = offset; k < grid.z+1 - offset; k++){
+				grad2rho = (-rho[i+2][j][k] + 16.*rho[i+1][j][k] - 30. * rho[i][j][k] + 16.*rho[i-1][j][k] - rho[i-2][j][k]) * 12. * SQR(invDX) +
+									 (-rho[i][j+2][k] + 16.*rho[i][j+1][k] - 30. * rho[i][j][k] + 16.*rho[i][j-1][k] - rho[i][j-2][k]) * 12. * SQR(invDY) +
+									 (-rho[i][j][k+2] + 16.*rho[i][j][k+1] - 30. * rho[i][j][k] + 16.*rho[i][j][k-1] - rho[i][j][k-2]) * 12. * SQR(invDZ);
 
-				sigmaYZ[i][j][k] = KAPPA * (rho[i][j+1][k] - rho[i][j-1][k]) * invDY * (rho[i][j][k+1] - rho[i][j][k-1]) * invDZ - WabSec;
+				derRhoX = (-rho[i+2][j][k] + 8.*rho[i+1][j][k] - 8.*rho[i-1][j][k] + rho[i-2][j][k]) * invDX;
+				derRhoY = (-rho[i][j+2][k] + 8.*rho[i][j+1][k] - 8.*rho[i][j-1][k] + rho[i][j-2][k]) * invDY;
+				derRhoZ = (-rho[i][j][k+2] + 8.*rho[i][j][k+1] - 8.*rho[i][j][k-1] + rho[i][j][k-2]) * invDZ;
+				gradrho2 = SQR(derRhoX) + SQR(derRhoY) + SQR(derRhoZ);
 				
-				sigmaZZ[i][j][k] = KAPPA * (rho[i][j][k+1] - rho[i][j][k-1]) * invDZ * (rho[i][j][k+1] - rho[i][j][k-1]) * invDZ - WabSec;
+				WabSec = KAPPA * (rho[i][j][k] * grad2rho + .5 * gradrho2);
+//				WabSec = KAPPA * (.5 * gradrho2);
+
+				sigmaXZ[i][j][k] = KAPPA * derRhoX * derRhoZ - WabSec;
+				sigmaYZ[i][j][k] = KAPPA * derRhoY * derRhoZ - WabSec;
+				sigmaZZ[i][j][k] = KAPPA * derRhoZ * derRhoZ - WabSec;
 
 				p0 = - 0.5 * V11 * SQR(rho[i][j][k]) - W111 * CUBE(rho[i][j][k]) / 3. +
-						 rho[i][j][k] * (1 + wa[i][j][k] - sub[i][j][k]);
+						 rho[i][j][k] * (1. + wa[i][j][k] - sub[i][j][k]);
 				sigmaZZ[i][j][k] += p0;
 			}
 		}
@@ -292,15 +300,19 @@ void CalcSigmas () {
 /*******************************************************************************************/
 
 void CalcDivSigma () {
-	double invDX = .5 / dx;
-	double invDY = .5 / dy;
-	double invDZ = .5 / dz;
-	for(int i = 2; i < grid.x-1; i++){
-		for(int j = 2; j < grid.y-1; j++){
-			for(int k = 2; k < grid.z-1; k++){
-				divSigma[i][j][k] = (sigmaXZ[i+1][j][k] - sigmaXZ[i-1][j][k]) * invDX +
-														(sigmaYZ[i][j+1][k] - sigmaYZ[i][j-1][k]) * invDY +
-														(sigmaZZ[i][j][k+1] - sigmaZZ[i][j][k-1]) * invDZ;
+	double invDX = 1. / (12. * dx);
+	double invDY = 1. / (12. * dy);
+	double invDZ = 1. / (12. * dz);
+	double derSigmaXZ, derSigmaYZ, derSigmaZZ;
+
+	for(int i = 2*offset; i < grid.x+1 - 2*offset; i++){
+		for(int j = 2*offset; j < grid.y+1 - 2*offset; j++){
+			for(int k = 2*offset; k < grid.z+1 - 2*offset; k++){
+				derSigmaXZ = (-sigmaXZ[i+2][j][k] + 8.*sigmaXZ[i+1][j][k] - 8.*sigmaXZ[i-1][j][k] + sigmaXZ[i-2][j][k]) * invDX;
+				derSigmaYZ = (-sigmaYZ[i][j+2][k] + 8.*sigmaYZ[i][j+1][k] - 8.*sigmaYZ[i][j-1][k] + sigmaYZ[i][j-2][k]) * invDY;
+				derSigmaZZ = (-sigmaZZ[i][j][k+2] + 8.*sigmaZZ[i][j][k+1] - 8.*sigmaZZ[i][j][k-1] + sigmaZZ[i][j][k-2]) * invDZ;
+
+				divSigma[i][j][k] = derSigmaXZ + derSigmaYZ + derSigmaZZ;
 			}
 		}
 	}
@@ -318,10 +330,11 @@ void PrintDiff () {
 	
 	diff=fopen(fullname_diff,"a");
 	fprintf(diff,"VARIABLES = \"X\", \"Y\", \"Z\",\"sigmaXZ\",\"sigmaYZ\",\"sigmaZZ\",\"divSigma\",\"denForce\",\"diff\",\n");
-	fprintf(diff,"ZONE I=%d, J=%d, K=%d, F=POINT\n", grid.x - 3, grid.y - 3, grid.z - 3);
-	for (int i = 2; i < grid.x-1; i++){
-		for (int j = 2; j < grid.y-1; j++){
-			for (int k = 2; k < grid.z-1; k++){
+	fprintf(diff,"ZONE I=%d, J=%d, K=%d, F=POINT\n",
+					grid.x+1 - 4*offset, 	grid.y+1 - 4*offset, 	grid.z+1 - 4*offset);
+	for (int i = 2*offset; i < grid.x+1 - 2*offset; i++){
+		for (int j = 2*offset; j < grid.y+1 - 2*offset; j++){
+			for (int k = 2*offset; k < grid.z+1 - 2*offset; k++){
 				fprintf(diff,"%5.2f %5.2f %5.2f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f\n",
 								i*dx, j*dy, k*dz,
 								kbT * sigmaXZ[i][j][k],kbT * sigmaYZ[i][j][k],kbT * sigmaZZ[i][j][k],
