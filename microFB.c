@@ -75,7 +75,6 @@ void PassConsoleParams (int argc, char **argv) {
 			strcpy(path,"/data/isilon/tretyakov/mf_lb/");
 		} else if (strcmp(argv[argz], "mbpr") == 0) {
 			strcpy(path,"/Users/niktre/simulation/60_mf_lb_sh/");
-//			printf("path is %s\n", path);
 		} else {
 			printf ("Error! Unknown system specification!\n");
 		}
@@ -121,12 +120,10 @@ void ReadSubFunc () {
 	sprintf(name,"snapshot_final.dat");
 	MAKE_FILENAME(fullname_snap,name);
 	snap=fopen(fullname_snap,"r");
-//	printf ("fullname_snap is %s\n", fullname_snap);
 
 	// skip first 10 words (header of tecplot)
 	for (int i=0; i<10; i++) {
 		fscanf (snap, "%s", str);
-//		printf ("%s\n", str);
 	}
 
 	for(int i = 1; i < grid.x+1; i++){
@@ -146,7 +143,6 @@ void ReadSubFunc () {
 	sprintf(name,"Wfields_final.dat");
 	MAKE_FILENAME(fullname_Wfields,name);
 	Wfields=fopen(fullname_Wfields,"r");
-//	printf ("fullname_Wfields is %s\n", fullname_Wfields);
 
 	for(int i = 1; i < grid.x+1; i++){
 		for(int j = 1; j < grid.y+1; j++){
@@ -251,13 +247,14 @@ void CalcForceZ () {
 	for(int i = 1; i < grid.x+1; i++){
 		for(int j = 1; j < grid.y+1; j++){
 			for(int k = 1; k < grid.z; k++){
-//				printf("for k-1 = %d and k+1 = %d \n", k-1, k+1);
 				fZ[i][j][k] = - rho[i][j][k] * (sub[i][j][k+1] - sub[i][j][k-1]) * invDZ;
 			}
 		}
 	}
 	printf("calculated fZ\n");
 }
+
+/*******************************************************************************************/
 
 void CalcSigmas () {
 	double invDX = .5 / dx;
@@ -292,6 +289,7 @@ void CalcSigmas () {
 	printf("calculated sigmaXZ, sigmaYZ and sigmaZZ\n");
 }
 
+/*******************************************************************************************/
 
 void CalcDivSigma () {
 	double invDX = .5 / dx;
@@ -309,7 +307,11 @@ void CalcDivSigma () {
 	printf("calculated divergence of sigma\n");
 }
 
+/*******************************************************************************************/
+
 void PrintDiff () {
+	double 	kbT = 41.16404397;
+
 	FILE *diff;
 	
 	MAKE_FILENAME(fullname_diff,"difference.dat");
@@ -318,16 +320,17 @@ void PrintDiff () {
 	for (int i = 2; i < grid.x-1; i++){
 		for (int j = 2; j < grid.y-1; j++){
 			for (int k = 2; k < grid.z-1; k++){
-				fprintf(diff,"%g %g %g %g %g %g\n",
-//								(i - 0.5)*dx, (j - 0.5)*dy, (k - 0.5)*dz,
-								(i)*dx, (j)*dy, (k)*dz,
-								divSigma[i][j][k], fZ[i][j][k], divSigma[i][j][k] - fZ[i][j][k]);
+				fprintf(diff,"%5.2f %5.2f %5.2f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f\n",
+								i*dx, j*dy, k*dz,
+								kbT * sigmaXZ[i][j][k],kbT * sigmaYZ[i][j][k],kbT * sigmaZZ[i][j][k],
+								kbT * divSigma[i][j][k], kbT * fZ[i][j][k], kbT * (divSigma[i][j][k] - fZ[i][j][k]) );
 			}
 		}
 	}
 	fclose(diff);
 	printf("finished output. Thank you very much!\n");
 }
+
 /*******************************************************************************************/
 
 void AllocArrays () {
