@@ -19,7 +19,7 @@ char fullname_diff[120];
 #define V11			-1.086641506142464
 #define W111			0.023102120829070
 #define KAPPA		2 * 0.015739171
-#define rho_liq		33.33
+#define rho_liq		33.4
 
 /* integration variables */
 double *koeff_x_semi, *koeff_y_semi, *koeff_z_open;
@@ -286,14 +286,16 @@ void CalcSigmas () {
 				gradrho2 = SQR(derRhoX) + SQR(derRhoY) + SQR(derRhoZ);
 				
 				WabSec = KAPPA * (rho[i][j][k] * grad2rho + .5 * gradrho2);
-//				WabSec = KAPPA * (.5 * gradrho2);
 
 				sigmaXZ[i][j][k] = KAPPA * derRhoX * derRhoZ - WabSec;
 				sigmaYZ[i][j][k] = KAPPA * derRhoY * derRhoZ - WabSec;
 				sigmaZZ[i][j][k] = KAPPA * derRhoZ * derRhoZ - WabSec;
 
-				p0 = - 0.5 * V11 * SQR(rho[i][j][k]) - W111 * CUBE(rho[i][j][k]) / 3. +
-						 rho[i][j][k] * (1. + wa[i][j][k] - sub[i][j][k]);
+				p0 = rho[i][j][k] + 0.5 * V11 * SQR(rho[i][j][k]) + 2. * W111 * CUBE(rho[i][j][k]) / 3.;
+//				p0 = rho[i][j][k] * (1. + wa[i][j][k]) - 0.5 * V11 * SQR(rho[i][j][k]) - W111 * CUBE(rho[i][j][k]) / 3.;
+//				p0 = rho[i][j][k] + 0.5 * V11 * SQR(rho[i][j][k]) + 2. * W111 * CUBE(rho[i][j][k]) / 3.;
+//				p0 = - 0.5 * V11 * SQR(rho[i][j][k]) - W111 * CUBE(rho[i][j][k]) / 3. + rho[i][j][k] * (1. + wa[i][j][k] - sub[i][j][k]);
+//				p0 = rho[i][j][k] * (1. + wa[i][j][k] - sub[i][j][k]);
 				sigmaZZ[i][j][k] += p0;
 			}
 		}
@@ -341,8 +343,8 @@ void PrintDiff () {
 			for (int k = 2*offset; k < grid.z+1 - 2*offset; k++){
 				fprintf(diff,"%5.2f %5.2f %5.2f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f\n",
 								i*dx, j*dy, k*dz,
-								kbT * sigmaXZ[i][j][k],kbT * sigmaYZ[i][j][k],kbT * sigmaZZ[i][j][k],
-								kbT * divSigma[i][j][k], kbT * fZ[i][j][k], kbT * (divSigma[i][j][k] - fZ[i][j][k]) );
+								kbT*sigmaXZ[i][j][k], kbT*sigmaYZ[i][j][k], kbT*sigmaZZ[i][j][k],
+								kbT*divSigma[i][j][k], kbT*fZ[i][j][k], kbT*(divSigma[i][j][k]-fZ[i][j][k]) );
 			}
 		}
 	}

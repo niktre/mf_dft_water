@@ -114,7 +114,6 @@ double ***grad;
  c       |                                 |
  c    0__|__1__2__.....__grid.x-1__grid.x__|__grid.x+1
  c       |                                 |
- c       |                                 |
  c
  c       0 = grid.x, grid.x+1 = 1   _____ = L.x / grid.x
  c
