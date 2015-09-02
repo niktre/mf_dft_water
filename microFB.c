@@ -16,9 +16,10 @@ char fullname_Wfields[120];
 char fullname_Wsub[120];
 char fullname_diff[120];
 
-#define	V11			-1.086641506142464
-#define	W111		0.023102120829070
-#define	KAPPA		2 * 0.015739171
+#define V11			-1.086641506142464
+#define W111			0.023102120829070
+#define KAPPA		2 * 0.015739171
+#define rho_liq		33.33
 
 /* integration variables */
 double *koeff_x_semi, *koeff_y_semi, *koeff_z_open;
@@ -114,7 +115,7 @@ void ReadSubFunc () {
 	double _i, _j, _k;
 	double _rho, _df_drho, _grad;
 	double _sub, _wa;
-	double _wa_temp, _sub_temp;
+	double _rho_temp, _wa_temp, _sub_temp;
 	char str [120];
 	
 	FILE *snap, *Wfields, *Wsub;
@@ -133,7 +134,7 @@ void ReadSubFunc () {
 			for(int k = 1; k < grid.z+1; k++){
 				/* read in the field and the substrate potential */
 				fscanf(snap,"%lf %lf %lf %lf %lf %lf %lf %lf \n",
-							 &_i, &_j, &_k, &rho[i][j][k], &df_drho[i][j][k], &grad[i][j][k], &_sub_temp, &_wa_temp);
+							 &_i, &_j, &_k, &_rho_temp, &df_drho[i][j][k], &grad[i][j][k], &_sub_temp, &_wa_temp);
 			}
 		}
 	}
@@ -151,6 +152,8 @@ void ReadSubFunc () {
 			for(int k = 1; k < grid.z+1; k++){
 				fscanf(Wfields,"%lf \n",&_wa);
 				wa[i][j][k] = _wa;
+				// the following is only valid for grand canonical ensemble:
+				rho[i][j][k] = rho_liq * exp(V11*rho_liq + W111*SQR(rho_liq) - wa[i][j][k]);
 			}
 		}
 	}
@@ -279,6 +282,7 @@ void CalcSigmas () {
 				derRhoX = (-rho[i+2][j][k] + 8.*rho[i+1][j][k] - 8.*rho[i-1][j][k] + rho[i-2][j][k]) * invDX;
 				derRhoY = (-rho[i][j+2][k] + 8.*rho[i][j+1][k] - 8.*rho[i][j-1][k] + rho[i][j-2][k]) * invDY;
 				derRhoZ = (-rho[i][j][k+2] + 8.*rho[i][j][k+1] - 8.*rho[i][j][k-1] + rho[i][j][k-2]) * invDZ;
+
 				gradrho2 = SQR(derRhoX) + SQR(derRhoY) + SQR(derRhoZ);
 				
 				WabSec = KAPPA * (rho[i][j][k] * grad2rho + .5 * gradrho2);
