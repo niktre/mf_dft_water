@@ -38,6 +38,7 @@ double ***grad;
 
 //double ***p0;
 double ***divSigma;
+double ***derSigmaXZ, ***derSigmaYZ, ***derSigmaZZ;
 double ***sigmaXZ, ***sigmaYZ, ***sigmaZZ;
 double ***fZ;
 
@@ -309,16 +310,16 @@ void CalcDivSigma () {
 	double invDX = 1. / (12. * dx);
 	double invDY = 1. / (12. * dy);
 	double invDZ = 1. / (12. * dz);
-	double derSigmaXZ, derSigmaYZ, derSigmaZZ;
+//	double derSigmaXZ, derSigmaYZ, derSigmaZZ;
 
 	for(int i = 2*offset; i < grid.x+1 - 2*offset; i++){
 		for(int j = 2*offset; j < grid.y+1 - 2*offset; j++){
 			for(int k = 2*offset; k < grid.z+1 - 2*offset; k++){
-				derSigmaXZ = (-sigmaXZ[i+2][j][k] + 8.*sigmaXZ[i+1][j][k] - 8.*sigmaXZ[i-1][j][k] + sigmaXZ[i-2][j][k]) * invDX;
-				derSigmaYZ = (-sigmaYZ[i][j+2][k] + 8.*sigmaYZ[i][j+1][k] - 8.*sigmaYZ[i][j-1][k] + sigmaYZ[i][j-2][k]) * invDY;
-				derSigmaZZ = (-sigmaZZ[i][j][k+2] + 8.*sigmaZZ[i][j][k+1] - 8.*sigmaZZ[i][j][k-1] + sigmaZZ[i][j][k-2]) * invDZ;
+				derSigmaXZ[i][j][k] = (-sigmaXZ[i+2][j][k] + 8.*sigmaXZ[i+1][j][k] - 8.*sigmaXZ[i-1][j][k] + sigmaXZ[i-2][j][k]) * invDX;
+				derSigmaYZ[i][j][k] = (-sigmaYZ[i][j+2][k] + 8.*sigmaYZ[i][j+1][k] - 8.*sigmaYZ[i][j-1][k] + sigmaYZ[i][j-2][k]) * invDY;
+				derSigmaZZ[i][j][k] = (-sigmaZZ[i][j][k+2] + 8.*sigmaZZ[i][j][k+1] - 8.*sigmaZZ[i][j][k-1] + sigmaZZ[i][j][k-2]) * invDZ;
 
-				divSigma[i][j][k] = derSigmaXZ + derSigmaYZ + derSigmaZZ;
+				divSigma[i][j][k] = derSigmaXZ[i][j][k] + derSigmaYZ[i][j][k] + derSigmaZZ[i][j][k];
 			}
 		}
 	}
@@ -335,15 +336,16 @@ void PrintDiff () {
 	MAKE_FILENAME(fullname_diff,"microFB.dat");
 	
 	diff=fopen(fullname_diff,"a");
-	fprintf(diff,"VARIABLES = \"X\", \"Y\", \"Z\",\"sigmaXZ\",\"sigmaYZ\",\"sigmaZZ\",\"divSigma\",\"denForce\",\"diff\",\n");
+	fprintf(diff,"VARIABLES = \"X\", \"Y\", \"Z\",\"sigmaXZ\",\"sigmaYZ\",\"sigmaZZ\",\"derSigmaXZ\",\"derSigmaYZ\",\"derSigmaZZ\",\"divSigma\",\"denForce\",\"diff\",\n");
 	fprintf(diff,"ZONE I=%d, J=%d, K=%d, F=POINT\n",
 					grid.x+1 - 4*offset, 	grid.y+1 - 4*offset, 	grid.z+1 - 4*offset);
 	for (int i = 2*offset; i < grid.x+1 - 2*offset; i++){
 		for (int j = 2*offset; j < grid.y+1 - 2*offset; j++){
 			for (int k = 2*offset; k < grid.z+1 - 2*offset; k++){
-				fprintf(diff,"%5.2f %5.2f %5.2f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f\n",
+				fprintf(diff,"%5.2f %5.2f %5.2f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f\n",
 								i*dx, j*dy, k*dz,
 								kbT*sigmaXZ[i][j][k], kbT*sigmaYZ[i][j][k], kbT*sigmaZZ[i][j][k],
+								kbT*derSigmaXZ[i][j][k], kbT*derSigmaYZ[i][j][k], kbT*derSigmaZZ[i][j][k],
 								kbT*divSigma[i][j][k], kbT*fZ[i][j][k], kbT*(divSigma[i][j][k]-fZ[i][j][k]) );
 			}
 		}
@@ -372,6 +374,9 @@ void AllocArrays () {
 	ALLOC_MEM3 (grad, grid.x+1, grid.y+1, grid.z+1, double);
 	
 	ALLOC_MEM3 (divSigma, grid.x+1, grid.y+1, grid.z+1, double);
+	ALLOC_MEM3 (derSigmaXZ, grid.x+1, grid.y+1, grid.z+1, double);
+	ALLOC_MEM3 (derSigmaYZ, grid.x+1, grid.y+1, grid.z+1, double);
+	ALLOC_MEM3 (derSigmaZZ, grid.x+1, grid.y+1, grid.z+1, double);
 	ALLOC_MEM3 (fZ, grid.x+1, grid.y+1, grid.z+1, double);
 	
 	ALLOC_MEM3 (sigmaXZ, grid.x+1, grid.y+1, grid.z+1, double);
