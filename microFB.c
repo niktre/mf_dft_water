@@ -276,9 +276,9 @@ void CalcSigmas () {
 	for(int i = offset; i < grid.x+1 - offset; i++){
 		for(int j = offset; j < grid.y+1 - offset; j++){
 			for(int k = offset; k < grid.z+1 - offset; k++){
-				grad2rho = (-rho[i+2][j][k] + 16.*rho[i+1][j][k] - 30. * rho[i][j][k] + 16.*rho[i-1][j][k] - rho[i-2][j][k]) * 12. * SQR(invDX) +
-									 (-rho[i][j+2][k] + 16.*rho[i][j+1][k] - 30. * rho[i][j][k] + 16.*rho[i][j-1][k] - rho[i][j-2][k]) * 12. * SQR(invDY) +
-									 (-rho[i][j][k+2] + 16.*rho[i][j][k+1] - 30. * rho[i][j][k] + 16.*rho[i][j][k-1] - rho[i][j][k-2]) * 12. * SQR(invDZ);
+//				grad2rho = (-rho[i+2][j][k] + 16.*rho[i+1][j][k] - 30. * rho[i][j][k] + 16.*rho[i-1][j][k] - rho[i-2][j][k]) * 12. * SQR(invDX) +
+//									 (-rho[i][j+2][k] + 16.*rho[i][j+1][k] - 30. * rho[i][j][k] + 16.*rho[i][j-1][k] - rho[i][j-2][k]) * 12. * SQR(invDY) +
+//									 (-rho[i][j][k+2] + 16.*rho[i][j][k+1] - 30. * rho[i][j][k] + 16.*rho[i][j][k-1] - rho[i][j][k-2]) * 12. * SQR(invDZ);
 
 				derRhoX = (-rho[i+2][j][k] + 8.*rho[i+1][j][k] - 8.*rho[i-1][j][k] + rho[i-2][j][k]) * invDX;
 				derRhoY = (-rho[i][j+2][k] + 8.*rho[i][j+1][k] - 8.*rho[i][j-1][k] + rho[i][j-2][k]) * invDY;
@@ -286,18 +286,15 @@ void CalcSigmas () {
 
 				gradrho2 = SQR(derRhoX) + SQR(derRhoY) + SQR(derRhoZ);
 				
-				WabSec = KAPPA * (rho[i][j][k] * grad2rho + .5 * gradrho2);
+				WabSec = KAPPA * .5 * gradrho2;
 
-				sigmaXZ[i][j][k] = KAPPA * derRhoX * derRhoZ - WabSec;
-				sigmaYZ[i][j][k] = KAPPA * derRhoY * derRhoZ - WabSec;
+				sigmaXZ[i][j][k] = KAPPA * derRhoX * derRhoZ;
+				sigmaYZ[i][j][k] = KAPPA * derRhoY * derRhoZ;
 				sigmaZZ[i][j][k] = KAPPA * derRhoZ * derRhoZ - WabSec;
 
-				p0 = rho[i][j][k] + 0.5 * V11 * SQR(rho[i][j][k]) + 2. * W111 * CUBE(rho[i][j][k]) / 3.;
-//				p0 = rho[i][j][k] * (1. + wa[i][j][k]) - 0.5 * V11 * SQR(rho[i][j][k]) - W111 * CUBE(rho[i][j][k]) / 3.;
-//				p0 = rho[i][j][k] + 0.5 * V11 * SQR(rho[i][j][k]) + 2. * W111 * CUBE(rho[i][j][k]) / 3.;
-//				p0 = - 0.5 * V11 * SQR(rho[i][j][k]) - W111 * CUBE(rho[i][j][k]) / 3. + rho[i][j][k] * (1. + wa[i][j][k] - sub[i][j][k]);
-//				p0 = rho[i][j][k] * (1. + wa[i][j][k] - sub[i][j][k]);
-				sigmaZZ[i][j][k] += p0;
+//				p0 = rho[i][j][k] * (- 0.5 * V11 * rho[i][j][k] 
+//											- 1./3. * W111 * SQR(rho[i][j][k]) 
+//											+ wa[i][j][k] + 1. - sub[i][j][k] );
 			}
 		}
 	}
@@ -311,13 +308,19 @@ void CalcDivSigma () {
 	double invDY = 1. / (12. * dy);
 	double invDZ = 1. / (12. * dz);
 //	double derSigmaXZ, derSigmaYZ, derSigmaZZ;
-
+	double derRhoX, derRhoY, derRhoZ;
+	double derRho2XZ, derRho2YZ, derRho2ZZ;
 	for(int i = 2*offset; i < grid.x+1 - 2*offset; i++){
 		for(int j = 2*offset; j < grid.y+1 - 2*offset; j++){
 			for(int k = 2*offset; k < grid.z+1 - 2*offset; k++){
 				derSigmaXZ[i][j][k] = (-sigmaXZ[i+2][j][k] + 8.*sigmaXZ[i+1][j][k] - 8.*sigmaXZ[i-1][j][k] + sigmaXZ[i-2][j][k]) * invDX;
 				derSigmaYZ[i][j][k] = (-sigmaYZ[i][j+2][k] + 8.*sigmaYZ[i][j+1][k] - 8.*sigmaYZ[i][j-1][k] + sigmaYZ[i][j-2][k]) * invDY;
 				derSigmaZZ[i][j][k] = (-sigmaZZ[i][j][k+2] + 8.*sigmaZZ[i][j][k+1] - 8.*sigmaZZ[i][j][k-1] + sigmaZZ[i][j][k-2]) * invDZ;
+
+				derRhoX = (-rho[i+2][j][k] + 8.*rho[i+1][j][k] - 8.*rho[i-1][j][k] + rho[i-2][j][k]) * invDX;
+				derRhoY = (-rho[i][j+2][k] + 8.*rho[i][j+1][k] - 8.*rho[i][j-1][k] + rho[i][j-2][k]) * invDY;
+				derRhoZ = (-rho[i][j][k+2] + 8.*rho[i][j][k+1] - 8.*rho[i][j][k-1] + rho[i][j][k-2]) * invDZ;
+				derSigmaZZ[i][j][k] += derRhoZ * (wa[i][j][k] - sub[i][j][k] - V11 * rho[i][j][k] - W111 * SQR(rho[i][j][k]))+fZ[i][j][k];
 
 				divSigma[i][j][k] = derSigmaXZ[i][j][k] + derSigmaYZ[i][j][k] + derSigmaZZ[i][j][k];
 			}
