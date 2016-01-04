@@ -9,15 +9,15 @@
 #include "in_vdefs.h"
 #include "io_interface.c"
 
-#define NDIM 2			// number of dimensions. if == 2, then Ly is is small
 #ifndef M_PI
 	#define M_PI 3.14159265358979323846264338327 
 #endif
+
 typedef struct{
 	VecI rs;
-} substrateNode;
+} cluster;
 
-substrateNode *subNode;
+cluster *subNode;
 
 int nSub;
 
@@ -33,20 +33,20 @@ char fullname_snap[120];
 char fullname_param[120];
 char fullname_press[120];
 char fullname_profiling[120];
-char fullname_test[120];
+//char fullname_test[120];
 char path[80];
 char folder[80];
 int write_snapshot;
 
 /* global properties of the system*/
-double kbT;								// kbT :-)
+double kbT;
 double rho_liq;						// density in the bulk (at the top of the box)
 double lambda;							// relaxation parameter of the SC-scheme
 
 /* properties of the run */
 int	restart;							// restart flag
 int	iteration_num;					// if restarted, the last existing iteration
-int	iterations;						// desired iterations limit
+int IterLim = 60000000;						// desired iterations limit
 int	filled_init;					// initial state of the interface
 double convergence;					// convergence
 
@@ -155,7 +155,6 @@ int main (int argc, char **argv){
 	FILE	*snapshot, *iterkeeper, *converge, *wPressure;
 		
 	/* Lengths are measured in nm */
-	iterations = 60000000;
 	kbT = 4.116404397;
 	rCut = 5.;
 	sigma_sub = .3;
@@ -462,7 +461,7 @@ int main (int argc, char **argv){
 	}
 	
 	// main iteration loop
-	for (kk = 0; kk < iterations; kk++){
+	for (kk = 0; kk < IterLim; kk++){
 		if (kk % TWRITE != 0) {
 			write_snapshot = 0;
 		} else {
@@ -892,7 +891,7 @@ void AllocSubstrate () {
 //	corrAt = (int)(nRep.x * nRep.y * ((int)(corr.x / dx) + 1) * ((int)(corr.y / dy) + 1) * ((int)(corr.z / dz) + 1)); // too much?
 	bulkSubAt = (int)((2. * rCut / dx  + 1) * (2. * rCut / dy  + 1));
 	maxSubAtNum = MAX(corrAt, bulkSubAt);
-	ALLOC_MEM (subNode, maxSubAtNum, substrateNode);
+	ALLOC_MEM (subNode, maxSubAtNum, cluster);
 	printf("Allocated %d substrate nodes\n", maxSubAtNum);
 }
 

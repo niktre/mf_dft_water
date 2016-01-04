@@ -18,7 +18,7 @@ char fullname_diff[120];
 
 #define V11			-1.086641506142464
 #define W111			0.023102120829070
-#define KAPPA		2 * 0.015739171
+#define KAPPA		0.015739171
 #define rho_liq		33.4
 
 /* integration variables */

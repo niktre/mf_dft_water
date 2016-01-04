@@ -54,7 +54,7 @@ void StoreParameters () {
 	extern int NVT;
 	extern int filled_init;
 	extern double rho_liq, lambda;
-	extern int iterations;
+	extern int IterLim;
 	
 	extern char fullname_param[];
 	extern char foldername[];
@@ -68,7 +68,7 @@ void StoreParameters () {
 	fprintf(inParam, "Grid(grid.x,grid.y,grid.z)	%4d %4d %4d\n", grid.x, grid.y, grid.z);
 	fprintf(inParam, "Box (L.x,L.y,L.z)	%6.2f %6.2f %6.2f\n", L.x, L.y, L.z);
 	fprintf(inParam, "rho_liq	%8.4f\n", rho_liq);
-	fprintf(inParam, "iterations	%8d\n", iterations);
+	fprintf(inParam, "IterLim	%8d\n", IterLim);
 	fprintf(inParam, "lambda %8.6f\n", lambda);
 	fprintf(inParam, "corrugation	%6.2f %6.2f %6.2f\n", corr.x, corr.y, corr.z);
 	fprintf(inParam, "cavity is %6.2f %6.2f %6.2f\n", L.x - corr.x, L.y - corr.y, L.z - corr.z);
@@ -271,7 +271,7 @@ void PrintSubFile () {
 		for (int i = 1; i < grid.x+1; i++){
 			for (int j = 1; j < grid.y+1; j++){
 				for (int k = 1; k < grid.z+1; k++){
-					fprintf(Wsub,"%16.12f \n", sub[i][j][k]);
+					fprintf(Wsub,"%28.24f \n", sub[i][j][k]);
 				}
 			}
 		}
@@ -289,7 +289,7 @@ void PrintSubFile () {
 		for (int i = 1; i < grid.x+1; i++){
 			for (int j = 1; j < grid.y+1; j++){
 				for (int k = 1; k < grid.z+1; k++){
-					fprintf(Wsub,"%16.12f \n", sub[i][j][k]);
+					fprintf(Wsub,"%28.24f \n", sub[i][j][k]);
 				}
 			}
 		}
